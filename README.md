@@ -32,10 +32,11 @@ make info-modules
 
 ## TODOs
 
-- [ ] Which instant messaging protocoll shoudl we use?
+- [ ] Which instant messaging protocoll should we use?
 - [ ] Which modules from RIOT-OS do we need?
 - [ ] Create the project architecture.
-- [ ] Present the project architecture
+- [ ] Develop the application.
+- [ ] Present the project.
 
 ## Timeline
 
@@ -47,7 +48,7 @@ make info-modules
 
 - Present your walking skeleton (incl. demo)
 
-### 2025-02-10: Presentation 
+### 2025-02-10: Presentation
 
 - Give a short presentation on your work (live demo?)
 

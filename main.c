@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include "shell.h"
 #include "periph/gpio.h"
@@ -63,15 +63,16 @@ int cmd_led_toggle(int argc, char **argv) {
     }
 
     int led = atoi(argv[1]);
+    bool value;
     switch (led) {
-        case 1: gpio_toggle(LED0_PIN); break;
-        case 2: gpio_toggle(LED1_PIN); break;
-        case 3: gpio_toggle(LED2_PIN); break;
-        case 4: gpio_toggle(LED3_PIN); break;
+        case 1: gpio_toggle(LED0_PIN); value = gpio_read(LED0_PIN); break;
+        case 2: gpio_toggle(LED1_PIN); value = gpio_read(LED0_PIN); break;
+        case 3: gpio_toggle(LED2_PIN); value = gpio_read(LED0_PIN); break;
+        case 4: gpio_toggle(LED3_PIN); value = gpio_read(LED0_PIN); break;
         default: printf("Invalid LED number\n"); return 1;
     }
 
-    printf("LED %d toggled\n", led);
+    printf("LED %d toggled %s\n", led, value ? "off" : "on");
     return 0;
 }
 

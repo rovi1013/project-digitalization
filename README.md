@@ -30,6 +30,19 @@ List all availibe RIOT modules:
 make info-modules
 ```
 
+## Ask the Prof
+
+### Module ``shell_commands``
+
+[Makefile](./Makefile) module ``shell_commands`` error:
+
+```bash
+Error - using unknown modules: shell_commands
+make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include:742: ..module-check] Error 1
+```
+
+Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
+
 ## TODOs
 
 - [ ] Which instant messaging protocoll should we use?

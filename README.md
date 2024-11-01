@@ -1,20 +1,68 @@
 # Project Digitalization (WiSe 2024/35)
 
-This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to control a *Nordic* nRF52840 (DK) device. Providing additional remote access via the telegram protocol.
+This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
+control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
 
-## Modules
+
+## Project Structure
+
+```bash
+project/digitalization
+├── Makefile                      # Main Makefile
+├── .env                          # Secrets storage file
+├── src/
+│   ├── main.c                    # Main application file
+│   ├── led_control.c             # LED control source
+│   ├── led_control.h             # LED control header
+│   ├── telegram_bot.c            # Telegram bot source
+│   ├── telegram_bot.h            # Telegram bot header
+│   └── further classes           # ...
+└── README.md                     # Documentation
+
+```
+
+
+## RIOT-OS Modules
+
+### [periph/gpio.h](https://doc.riot-os.org/group__drivers__periph__gpio.html)
+
+Peripheral driver to control the specific pins on the board.
+
+### [board.h](https://doc.riot-os.org/group__boards__nrf52840dk.html)
+
+Specific configuration for the nRF52840 DK board, used to address the LED pins.
 
 ### [shell.h](https://doc.riot-os.org/group__sys__shell.html)
 
 Simple shell interpreter used to parse arguments.
 
-### [periph/gpio.h](https://doc.riot-os.org/group__drivers__periph__gpio.html)
+### [jsmn.h](https://doc.riot-os.org/group__pkg__jsmn.html)
 
-Peripheral dirver to controll the specific pins on the board.
+JSON parser library, used to process _Telegram_ bot messages.
 
-### [board.h](https://doc.riot-os.org/group__boards__nrf52840dk.html)
 
-Specific configuration for the nRF52840 DK board, used to adress the LED pins.
+## _Telegram_ Bot Integration
+
+### Set Up a Bot
+
+1. Open _Telegram_
+2. Search for "BotFather" and start a new chat with it
+3. Use ``/newbot`` to create a new bot
+4. Use the provided token to access the HTTP API
+
+The bot "BotFather" is used to create and manage bot accounts.
+
+_Telegram_ Bot API [Documentation](https://core.telegram.org/bots/api)
+
+### Bot Description
+
+This bot is used to send and receive messages to and from a small (proof-of-concept) IoT device. These messages can be 
+used to control the device running on RIOT-OS. See "Commands" for a list of all available controls.
+
+### Bot Commands
+
+...
+
 
 ## Useful commands
 
@@ -24,11 +72,12 @@ Flash the nRF52840 board:
 BOARD=nrf52840dk make all flash term
 ```
 
-List all availibe RIOT modules:
+List all available RIOT modules:
 
 ```bash
 make info-modules
 ```
+
 
 ## Ask the Prof
 
@@ -43,13 +92,19 @@ make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include
 
 Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
 
+### Use of "jsmn" library
+
+The jsmn library (parse JSON) is not included in RIOT OS despite it being mentioned in the [documentation](https://doc.riot-os.org/group__pkg__jsmn.html).
+
+
 ## TODOs
 
-- [ ] Which instant messaging protocoll should we use?
+- [ ] Which instant messaging protocol should we use?
 - [ ] Which modules from RIOT-OS do we need?
 - [ ] Create the project architecture.
 - [ ] Develop the application.
 - [ ] Present the project.
+
 
 ## Timeline
 

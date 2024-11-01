@@ -1,2 +1,6 @@
 .vscode
+.idea
+
 bin
+/cmake-build-debug/
+/.env

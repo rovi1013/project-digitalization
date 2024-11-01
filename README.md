@@ -36,6 +36,10 @@ Specific configuration for the nRF52840 DK board, used to address the LED pins.
 
 Simple shell interpreter used to parse arguments.
 
+### [sock.h](https://doc.riot-os.org/group__net__sock__udp.html)
+
+A network API for applications and libraries, used to create custom HTTP functionality with the UDP submodule.
+
 ### [jsmn.h](https://doc.riot-os.org/group__pkg__jsmn.html)
 
 JSON parser library, used to process _Telegram_ bot messages.

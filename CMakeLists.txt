@@ -8,12 +8,6 @@ set(SOURCE_FILES
         src/telegram_bot.h
         src/led_control.c
         src/led_control.h
-        src/token_manager.c
-        src/token_manager.h
-        src/cmd_control.c
-        src/cmd_control.h
-        src/message_handler.c
-        src/message_handler.h
 )
 
 # Set RIOT OS base directory

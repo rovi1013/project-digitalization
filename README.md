@@ -21,6 +21,22 @@ project/digitalization
 
 ```
 
+### Main Class
+
+Entry point of the application that initializes all modules and starts the main event loop.
+
+### Class led_control
+
+Handles direct interaction with the board’s LEDs.
+
+### Class telegram_bot
+
+Manages communication with the _Telegram_ API.
+
+### Class ...
+
+...
+
 
 ## RIOT-OS Modules
 
@@ -28,9 +44,13 @@ project/digitalization
 
 Peripheral driver to control the specific pins on the board.
 
+Used in: led_control
+
 ### [board.h](https://doc.riot-os.org/group__boards__nrf52840dk.html)
 
 Specific configuration for the nRF52840 DK board, used to address the LED pins.
+
+Used in: led_control
 
 ### [shell.h](https://doc.riot-os.org/group__sys__shell.html)
 
@@ -65,7 +85,45 @@ used to control the device running on RIOT-OS. See "Commands" for a list of all 
 
 ### Bot Commands
 
-...
+Turn on an LED:
+```bash
+led <1-4> <1-4> ... on
+```
+
+Turn off an LED:
+```bash
+led <1-4> <1-4> ... off
+```
+
+Toggle an LED:
+```bash
+led <1-4> <1-4> ... toggle
+```
+
+You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> <1-4>).
+Inferentially the maximum number of target LEDs for the commands above is 4.
+
+
+## Bash Control
+
+Alternatively, mainly for testing purposes, you can control the LEDs directly via the RIOT-OS command line.
+
+Turn on an LED:
+```bash
+led_on <1-4> <1-4> ...
+```
+
+Turn off an LED:
+```bash
+led_off <1-4> <1-4> ...
+```
+
+Toggle an LED:
+```bash
+led_toggle <1-4> <1-4> ...
+```
+
+The rules for these commands are the same as those for the _Telegram_ bot.
 
 
 ## Useful commands

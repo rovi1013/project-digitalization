@@ -4,10 +4,10 @@ project(project_digitalization C)
 # List all source files here to enable code insight
 set(SOURCE_FILES
         src/main.c
-        src/telegram_bot.c
-        src/telegram_bot.h
         src/led_control.c
         src/led_control.h
+        src/cmd_control.c
+        src/cmd_control.h
 )
 
 # Set RIOT OS base directory

@@ -2,7 +2,7 @@
 APPLICATION = project-digitalization
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= native
+BOARD ?= nrf52840dk
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/RIOT/
@@ -17,9 +17,13 @@ QUIET ?= 1
 
 # RIOT modules
 USEMODULE += shell
-#USEMODULE += shell_commands
-USEMODULE += xtimer
+USEMODULE += shell_cmds_default
 USEMODULE += periph_gpio
+USEPKG += jsmn
 
+# Source files
+SRC += src/main.c
+SRC += src/led_control.c
+SRC += src/shell_control.c
 
 include $(RIOTBASE)/Makefile.include

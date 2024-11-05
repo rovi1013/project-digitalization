@@ -14,9 +14,10 @@ project/digitalization
 │   ├── main.c                    # Main application file
 │   ├── led_control.c             # LED control source
 │   ├── led_control.h             # LED control header
-│   ├── telegram_bot.c            # Telegram bot source
-│   ├── telegram_bot.h            # Telegram bot header
+│   ├── cmd_control.c             # Shell control source
+│   ├── cmd_control.h             # Shell control header
 │   └── further classes           # ...
+├── CMakeLists.txt                # CMake project file
 └── README.md                     # Documentation
 
 ```
@@ -28,6 +29,10 @@ Entry point of the application that initializes all modules and starts the main 
 ### Class led_control
 
 Handles direct interaction with the board’s LEDs.
+
+### Class shell_control
+
+Used to control the board via the shell, useful for testing.
 
 ### Class telegram_bot
 
@@ -154,10 +159,14 @@ make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include
 
 Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
 
+**Answer**: Wrong name, correct name is `shell_cmds_default`
+
 ### Use of "jsmn" library
 
 The jsmn library (parse JSON) is not included in RIOT OS despite it being mentioned in the [documentation](https://doc.riot-os.org/group__pkg__jsmn.html).
 
+**Answer**: Not a module but a package. Use `USEPKG` instead of `USEMODULE`. Refer to RIOT/tests/ for example 
+implementations of most features (modules and packages) for the correct and up-to-date implementation.
 
 ## TODOs
 

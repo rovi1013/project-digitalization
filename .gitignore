@@ -1,5 +1,6 @@
 .vscode
 .idea
+.temp
 
 bin
 /cmake-build-debug/

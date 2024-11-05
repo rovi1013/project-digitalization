@@ -2,9 +2,6 @@
 // Created by vincent on 11/1/24.
 //
 
-#include <stdio.h>
-#include "ztimer.h"
-
 #include "led_control.h"
 #include "cmd_control.h"
 

@@ -8,9 +8,10 @@ control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via 
 
 ```bash
 project/digitalization
-├── Makefile                      # Main Makefile
+├── Makefile                      # Wrapper Makefile
 ├── .env                          # Secrets storage file
 ├── src/
+│   ├── Makefile                  # Main Makefile
 │   ├── main.c                    # Main application file
 │   ├── led_control.c             # LED control source
 │   ├── led_control.h             # LED control header
@@ -150,7 +151,7 @@ make info-modules
 
 ### Module ``shell_commands``
 
-[Makefile](./Makefile) module ``shell_commands`` error:
+[Makefile](src/Makefile) module ``shell_commands`` error:
 
 ```bash
 Error - using unknown modules: shell_commands
@@ -167,6 +168,11 @@ The jsmn library (parse JSON) is not included in RIOT OS despite it being mentio
 
 **Answer**: Not a module but a package. Use `USEPKG` instead of `USEMODULE`. Refer to RIOT/tests/ for example 
 implementations of most features (modules and packages) for the correct and up-to-date implementation.
+
+### Makefile location
+
+Is there any way to use the project structure where the Makefile is not in the same directory as the main.c file?
+
 
 ## TODOs
 

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "shell.h"
 #include "cmd_control.h"
 #include "led_control.h"
 
@@ -25,7 +26,7 @@ static int execute_led_action(const char *action, int leds[], int led_count) {
         else if (strcmp(action, "toggle") == 0) {
             led_control_toggle(leds[i]);
             int state = led_control_get_state(leds[i]);
-            printf("LED %d toggled %s\n", leds[i] + 1, state ? "ON" : "OFF");
+            printf("LED %d toggled %s\n", leds[i] + 1, state ? "OFF" : "ON"); //LED*_PIN value is 1 for OFF and 0 for ON
         }
         else {
             printf("Invalid action: %s\n", action);
@@ -103,9 +104,9 @@ int cmd_led_toggle(int argc, char **argv) {
 
 // Shell command list
 static const shell_command_t shell_commands[] = {
-    { "led_on", cmd_led_on, "Turn on LEDs (Usage: led_on <1-4> <1-4> ...)" },
-    { "led_off", cmd_led_off, "Turn off LEDs (Usage: led_off <1-4> <1-4> ...)" },
-    { "led_toggle", cmd_led_toggle, "Toggle LEDs (Usage: led_toggle <1-4> <1-4> ...)" },
+    { "led_on", .handler=cmd_led_on, .desc="Turn on LEDs (Usage: led_on <1-4> <1-4> ...)" },
+    { "led_off", .handler=cmd_led_off, .desc="Turn off LEDs (Usage: led_off <1-4> <1-4> ...)" },
+    { "led_toggle", .handler=cmd_led_toggle, .desc="Toggle LEDs (Usage: led_toggle <1-4> <1-4> ...)" },
     { NULL, NULL, NULL }  // End of command list
 };
 

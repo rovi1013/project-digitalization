@@ -1,7 +1,8 @@
-#include <stdint.h>
 //
 // Created by vincent on 11/1/24.
 //
+
+#include <stdint.h>
 
 #include "periph/gpio.h"
 #include "board.h"

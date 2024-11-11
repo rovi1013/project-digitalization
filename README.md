@@ -71,6 +71,68 @@ A network API for applications and libraries, used to create custom HTTP functio
 JSON parser library, used to process _Telegram_ bot messages.
 
 
+## Network Connectivity
+The IoT device we are using in this project (nRF52840) has no WIFI or LAN connectivity, as these devices usually do.
+Therefore, we have to use a border router which can connect to our device and to a "normal" network. For this we are
+using a raspberry-pi and the nRF52840-Dongle.
+TODO: explain network structure.
+
+### nRF52840-Dongle Setup
+First install additional dependencies
+```bash
+sudo apt install dfu-util
+```
+
+We are using the border router setup provided by [RIOT](RIOT/examples/gnrc_border_router/README.md). With this we can
+flash the dongle. The first step is to reset the dongle by pressing the reset button on it until the red light starts 
+flashing. Then we simply (from the correct directory) flash it
+```bash
+BOARD=nrf52840dongle make flash
+```
+
+The output from which looks something like this:
+```bash
+|===============================================================|
+|##      ##    ###    ########  ##    ## #### ##    ##  ######  |
+|##  ##  ##   ## ##   ##     ## ###   ##  ##  ###   ## ##    ## |
+|##  ##  ##  ##   ##  ##     ## ####  ##  ##  ####  ## ##       |
+|##  ##  ## ##     ## ########  ## ## ##  ##  ## ## ## ##   ####|
+|##  ##  ## ######### ##   ##   ##  ####  ##  ##  #### ##    ## |
+|##  ##  ## ##     ## ##    ##  ##   ###  ##  ##   ### ##    ## |
+| ###  ###  ##     ## ##     ## ##    ## #### ##    ##  ######  |
+|===============================================================|
+|You are not providing a signature key, which means the DFU     |
+|files will not be signed, and are vulnerable to tampering.     |
+|This is only compatible with a signature-less bootloader and is|
+|not suitable for production environments.                      |
+|===============================================================|
+
+Zip created at /home/username/project-digitalization/RIOT/examples/gnrc_border_router/bin/nrf52840dongle/gnrc_border_router.hex.zip
+stty -F /dev/ttyACM0 raw ispeed 1200 ospeed 1200 cs8 -cstopb ignpar eol 255 eof 255
+sleep 1
+nrfutil dfu usb-serial --port=/dev/ttyACM0 --package=/home/username/project-digitalization/RIOT/examples/gnrc_border_router/bin/nrf52840dongle/gnrc_border_router.hex.zip
+  [####################################]  100%          
+Device programmed.
+```
+
+#### Troubleshooting Permissions
+If this isn't successful you might need to add the necessary serial port permissions to the user.
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+After restarting your terminal (or typing ``newgrp dialout``) you should now be able to flash the device.
+With this, you can check permissions to the serial port
+```bash
+stty -F /dev/ttyACM0
+```
+
+The output should be anything but ``Permission denied``.
+
+### Raspberry-Pi Setup
+TODO: HOW TO SETUP RPI.
+
+
 ## _Telegram_ Bot Integration
 
 ### Set Up a Bot

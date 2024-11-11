@@ -17,7 +17,7 @@ void led_control_init(void) {
 }
 
 // Turn on a specific LED
-// LED*_PIN value for ON is 0
+// The LED*_PIN value for ON is 0
 void led_control_turn_on(uint8_t led) {
     switch (led) {
         case 0: gpio_clear(LED0_PIN); break;
@@ -29,7 +29,7 @@ void led_control_turn_on(uint8_t led) {
 }
 
 // Turn off a specific LED
-// LED*_PIN value for OFF is 1
+// The LED*_PIN value for OFF is 1
 void led_control_turn_off(uint8_t led) {
     switch (led) {
         case 0: gpio_set(LED0_PIN); break;

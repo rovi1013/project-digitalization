@@ -108,6 +108,7 @@ nrfutil version >=6.1.1 required
 
 Change Makefile in RIOT/examples/gnrc_border_router/Makefile according to
 https://teaching.dahahm.de/teaching/ss23/project/2023/05/06/nrf52840dongle_6lbr.html
+Use gnrc_border_router from AllRIOT/RIOT repository
 
 make package (for nrf52840dongle)
 

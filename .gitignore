@@ -2,6 +2,8 @@
 .idea
 .temp
 
+*.draft
+
 bin
 /cmake-build-debug/
 /.env

@@ -99,6 +99,9 @@ nrfutil version >=6.1.1 required
 
 -> requires Python >=3.7, <3.11 (https://pypi.org/project/nrfutil/)
 
+Change Makefile in RIOT/examples/gnrc_border_router/Makefile according to
+https://teaching.dahahm.de/teaching/ss23/project/2023/05/06/nrf52840dongle_6lbr.html
+
 make package (for nrf52840dongle)
 
 find usb device (lsusb), maybe need to push reset button, find target usb port (/dev/ttyACM*, in our case /dev/ttyACM0)

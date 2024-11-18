@@ -3,6 +3,8 @@
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
 control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
 
+SAUL (Sensor Actuator Uber Layer) API ist wohl wichtig
+
 
 ## Project Structure
 

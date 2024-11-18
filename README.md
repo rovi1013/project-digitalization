@@ -77,6 +77,11 @@ Therefore, we have to use a border router which can connect to our device and to
 using a raspberry-pi and the nRF52840-Dongle.
 TODO: explain network structure.
 
+IPv6 lowpan to connect BLE (Bluetooth low energy) of nrf board to standard ipv6, while saving a lot of size for the transmission (e.g. IPv6 header size).
+gnrc_networking make all term for interface, use variable PORT (from makefile) to connect if instance already running
+Connect to internet:
+dist/tools/tapsetup/tapsetup -u <interface> ; use ethernet as interface to add this to the network
+
 ### Raspberry-Pi Setup
 
 ip addr show

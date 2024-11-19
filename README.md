@@ -72,11 +72,29 @@ A network API for applications and libraries, used to create custom HTTP functio
 
 JSON parser library, used to process _Telegram_ bot messages.
 
+### SAUL Driver: [DHT Family of Humidity and Temperature Sensors](https://doc.riot-os.org/group__drivers__dht.html)
+Temperature and humidity sensor.
+
+
+## Temperature Sensor (DHT20)
+TODO: Explain (short)
+
+### PINs
+| DHT20 Pin | Function       | nRF52840-DK Pin           |
+|-----------|----------------|---------------------------|
+| VCC       | Power (3.3V)   | 3V3 on nRF52840-DK        |
+| GND       | Ground         | GND                       |
+| SDA       | I2C Data Line  | GPIO pin with I2C support |
+| SCL       | I2C Clock Line | GPIO pin with I2C support |
+
+
+
 
 ## Network Connectivity
-The IoT device we are using in this project (nRF52840) has no WIFI or LAN connectivity, as these devices usually do.
+The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices usually do.
 Therefore, we have to use a border router which can connect to our device and to a "normal" network. For this we are
 using a raspberry-pi and the nRF52840-Dongle.
+These two can be seen as a router.
 TODO: explain network structure.
 
 IPv6 lowpan to connect BLE (Bluetooth low energy) of nrf board to standard ipv6, while saving a lot of size for the transmission (e.g. IPv6 header size).
@@ -86,7 +104,7 @@ dist/tools/tapsetup/tapsetup -u <interface> ; use ethernet as interface to add t
 
 ### Raspberry-Pi Setup
 
-ip addr show
+ip addr show or /sbin/ifconfig 
 
 -> look up address range
 

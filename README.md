@@ -5,6 +5,11 @@ control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via 
 
 SAUL (Sensor Actuator Uber Layer) API ist wohl wichtig
 
+HTTP from device to (some) Gateway, Gateway translates to HTTPS. 
+No HTTP on RIOT-OS, simple Telegram HTTP client implementation necessary.
+
+Change Temperature Sensor to onbord sensor
+
 
 ## Project Structure
 
@@ -246,9 +251,10 @@ Is there any way to use the project structure where the Makefile is not in the s
 
 ## TODOs
 
-- [ ] Which instant messaging protocol should we use?
+- [x] Which instant messaging protocol should we use?
+    - Telegram
 - [ ] Which modules from RIOT-OS do we need?
-- [ ] Create the project architecture.
+- [x] Create the project architecture.
 - [ ] Develop the application.
 - [ ] Present the project.
 

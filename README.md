@@ -121,6 +121,17 @@ ssh to device -> authenticate with username and password
 
 riot@6lbr-3
 
+Modify /etc/network/interfaces to automatically assign the address range aaaa::/64 to the usb0 interface:
+```makefile
+source /etc/network/interfaces.d/*
+
+auto usb0
+iface usb0 inet6 static
+    address aaaa::1
+    netmask 64
+```
+
+
 TODO: HOW TO SETUP RPI.
 
 ### nRF52840-Dongle Setup

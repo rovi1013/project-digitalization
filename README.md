@@ -3,12 +3,54 @@
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
 control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
 
-SAUL (Sensor Actuator Uber Layer) API ist wohl wichtig
 
-HTTP from device to (some) Gateway, Gateway translates to HTTPS. 
-No HTTP on RIOT-OS, simple Telegram HTTP client implementation necessary.
+## Usage
 
-Change Temperature Sensor to onbord sensor
+### Setup
+
+1. Connect the nRF52840-DK Board to Your PC and ensure the board is powered on (status LED).
+2. Build and Flash the Application.
+
+Navigate to the project directory:
+```shell
+cd project-digitalization
+```
+
+Build the application (this includes RIOT-OS) and open a terminal to the board:
+```shell
+make all clean build term
+```
+
+### Shell Commands
+
+Control LEDs (brightness can be any value 0-255):
+```shell
+led <id> <on/off/brighness>
+```
+
+Read CPU temperature:
+```shell
+cpu-temp
+```
+
+Read mock sensor data:
+```shell
+mock <temp/hum>
+```
+
+### Useful commands
+
+Flash the nRF52840 board:
+
+```bash
+BOARD=nrf52840dk make all flash term
+```
+
+List all available RIOT modules:
+
+```bash
+make info-modules
+```
 
 
 ## Project Structure
@@ -32,75 +74,141 @@ project/digitalization
 
 ### Main Class
 
-Entry point of the application that initializes all modules and starts the main event loop.
+Entry point of the application that initializes all modules.
+
+Currently, the initialization methods led_control_init(), cpu_temperature_init(), and sensor_mock_init() are NO-OP methods, 
+which only return a "success" message. Only cmd_control_init() is actually initializing something: the shell.
+
+### Class cmd_control
+
+Provides the central shell command interface for controlling LEDs, reading CPU temperature, and accessing the mock sensor.
+
+**cmd_control_init**
+* Initialize the shell command interface.
+* Register the following commands:
+  * led <id> <action>: Controls LEDs (see [led_control](#class-led_control)).
+  * cpu-temp: Reads the CPU temperature (see [cpu_temperature](#class-cpu_temperature)).
+  * mock <temp/hum>: Reads temperature or humidity from the mock sensor (see [sensor_mock](#class-sensor_mock)).
+
 
 ### Class led_control
 
-Handles direct interaction with the board’s LEDs.
+Manages LED control using SAUL abstraction.
 
-### Class shell_control
+**led_control_init**
+* Initializes LED devices.
+* NO-OP for SAUL devices, "logs initialization".
 
-Used to control the board via the shell, useful for testing.
+**led_saul_write**
+* Generates the [phydat_t](#data-type-phydat_t) structure
+* Performs the SAUL write operation
 
-### Class telegram_bot
+**led_control_execute**
+* Executes an LED action based on:
+  * led_id (0 to 3): The ID of the LED to control.
+  * action: One of the following:
+    * "on": Turns the LED on.
+    * "off": Turns the LED off.
+    * Numeric value (e.g., "128"): Sets LED brightness.
 
-Manages communication with the _Telegram_ API.
+### Class cpu_temperature
 
-### Class ...
+Reads the CPU temperature data using SAUL abstraction.
 
-...
+**cpu_temperature_init**
+* Initializes CPU temperature sensor.
+* NO-OP for SAUL devices, "logs initialization".
+
+**cpu_temperature_execute**
+* Reads the CPU temperature and prints it in degrees Celsius.
+
+### Class sensor_mock
+
+Generates random temperature and humidity values for testing and development purposes.
+
+**sensor_mock_init**
+* Initializes mock sensor.
+* NO-OP for SAUL devices, "logs initialization".
+
+**generate_mock_data**
+* Randomly generates mock data:
+  * "temp": Generates a random temperature (0–50°C).
+  * "hum": Generates a random humidity (0–100%).
+
+**sensor_mock_execute**
+* Reads mock sensor data:
+  * "temp": Prints the temperature.
+  * "hum": Prints the humidity.
 
 
 ## RIOT-OS Modules
+A short description of each module, its purpose, why it was used, and where in the project it is utilized.
 
-### [periph/gpio.h](https://doc.riot-os.org/group__drivers__periph__gpio.html)
+### Module SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)
 
-Peripheral driver to control the specific pins on the board.
+The SAUL module provides a unified abstraction for accessing sensors and actuators. It simplifies interaction with 
+devices by exposing a common API for reading and writing values. Ensure compatibility with multiple hardware 
+devices using a consistent interface.
 
-Used in: led_control
+* led_control:
+  * Uses saul_reg_write to set LED brightness.
+  * Uses saul_reg_find_nth to locate the correct LED by its SAUL registry ID.
+* cpu_temperature:
+  * Uses saul_reg_read to fetch CPU temperature data.
 
-### [board.h](https://doc.riot-os.org/group__boards__nrf52840dk.html)
+More information here: [SAUL Driver](https://doc.riot-os.org/group__drivers__saul.html) documentation.
 
-Specific configuration for the nRF52840 DK board, used to address the LED pins.
+### Data Type phydat_t
 
-Used in: led_control
+phydat_t is a structure that standardizes the representation of physical data across sensors and actuators.
 
-### [shell.h](https://doc.riot-os.org/group__sys__shell.html)
+| Data Field | Description                         | Example Value | Data Type |
+|------------|-------------------------------------|---------------|-----------|
+| val[ ]     | Stores (up to) 3-dimensional values | 0.42,0,0      | int16_t   |
+| unit       | The (physical) unit of the data     | UNIT_TEMP_C   | uint8_t   |
+| scale      | The scale factor (10^factor)        | -2            | int8_t    |                
 
-Simple shell interpreter used to parse arguments.
+The example values from the table above result in 0.42 = temp * 10^(-2) UNIT_TEMP_C which means temp = 42°C.
 
-### [sock.h](https://doc.riot-os.org/group__net__sock__udp.html)
+Some sensors provide multidimensional data (e.g. accelerometer) which is why the data field val[ ] is 3-dimensional.
+
+More information here: [phydat_t structure](https://doc.riot-os.org/structphydat__t.html) documentation.
+
+### Module Shell
+
+The shell module provides a command-line interface for interacting with the board. It allows users to issue commands, 
+like controlling LEDs or reading sensor values. It provides a simple interface for testing and debugging within 
+the project.
+
+* cmd_control:
+  * Registers all shell commands (e.g., led, cpu-temp) and dispatches them to their respective handlers.
+
+More information here: [phydat_t structure](https://doc.riot-os.org/group__sys__shell.html) documentation.
+
+<!---
+TODO: FUTURE MODULES
+--->
+
+### sock.h
 
 A network API for applications and libraries, used to create custom HTTP functionality with the UDP submodule.
+See [link](https://doc.riot-os.org/group__net__sock__udp.html).
 
-### [jsmn.h](https://doc.riot-os.org/group__pkg__jsmn.html)
-
-JSON parser library, used to process _Telegram_ bot messages.
-
-### SAUL Driver: [DHT Family of Humidity and Temperature Sensors](https://doc.riot-os.org/group__drivers__dht.html)
-Temperature and humidity sensor.
-
-
-## Temperature Sensor (DHT20)
-TODO: Explain (short)
-
-### PINs
-| DHT20 Pin | Function       | nRF52840-DK Pin           |
-|-----------|----------------|---------------------------|
-| VCC       | Power (3.3V)   | 3V3 on nRF52840-DK        |
-| GND       | Ground         | GND                       |
-| SDA       | I2C Data Line  | GPIO pin with I2C support |
-| SCL       | I2C Clock Line | GPIO pin with I2C support |
-
-
+### jsmn.h
+JSON parser library. See [link](https://doc.riot-os.org/group__pkg__jsmn.html).
 
 
 ## Network Connectivity
-The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices usually do.
-Therefore, we have to use a border router which can connect to our device and to a "normal" network. For this we are
-using a raspberry-pi and the nRF52840-Dongle.
-These two can be seen as a router.
-TODO: explain network structure.
+The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
+usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For 
+this we are using a raspberry-pi and the nRF52840-Dongle. These two can be seen as a router.
+
+<!---
+TODO: INSERT NETWORK DIAGRAM
+--->
+
+<!---
+TODO: REWRITE THIS SECTION
 
 IPv6 lowpan to connect BLE (Bluetooth low energy) of nrf board to standard ipv6, while saving a lot of size for the transmission (e.g. IPv6 header size).
 gnrc_networking make all term for interface, use variable PORT (from makefile) to connect if instance already running
@@ -109,7 +217,7 @@ dist/tools/tapsetup/tapsetup -u <interface> ; use ethernet as interface to add t
 
 ### Raspberry-Pi Setup
 
-ip addr show or /sbin/ifconfig 
+ip addr show or /sbin/ifconfig
 
 -> look up address range
 
@@ -143,7 +251,61 @@ create .zip (for flash): nrfutil pkg generate --hw-version 52 --sd-req 0x00 --ap
 flash the device with .zip: nrfutil dfu usb-serial --port /dev/ttyACM0 --package gnrc_border_router.hex.zip
 
 Test with: ...
+--->
 
+### Connecting the Dongle to the Internet
+
+(maybe important?):
+install kea on raspberry-pi (sudo apt install kea)
+
+set up dongle (from AllRIOT/examples/gnrc_boarder_router) on Linux machine (PC: AMD64 only, no ARM):
+BOARD=nrf52840dongle make all flash term
+
+connect dongle to raspberry-pi
+ssh to rapsberry-pi
+go to AllRIOT/examples/gnrc_boarder_router
+BOARD=nrf52840dongle make term
+
+connect IoT board (nrf52840dk) to Linux machine (PC)
+Use gnrc network example from RIOT for testing (AllRIOT/examples/gnrc_networking)
+BOARD=nrf52840dk make all clean flash term
+ifconfig
+```shell
+2024-12-11 13:49:48,151 # Iface  6  HWaddr: 39:2F  Channel: 26  NID: 0x23  PHY: O-QPSK 
+2024-12-11 13:49:48,155 #           Long HWaddr: A6:1D:B3:F5:52:12:39:2F 
+2024-12-11 13:49:48,157 #            State: IDLE 
+2024-12-11 13:49:48,163 #           ACK_REQ  L2-PDU:102  MTU:1280  HL:64  6LO  
+2024-12-11 13:49:48,164 #           IPHC  
+2024-12-11 13:49:48,167 #           Source address length: 8
+2024-12-11 13:49:48,170 #           Link type: wireless
+2024-12-11 13:49:48,176 #           inet6 addr: fe80::a41d:b3f5:5212:392f  scope: link  VAL
+2024-12-11 13:49:48,182 #           inet6 addr: 2001:db8:0:2:a41d:b3f5:5212:392f  scope: global  VAL
+2024-12-11 13:49:48,185 #           inet6 group: ff02::1
+2024-12-11 13:49:48,186 #           
+2024-12-11 13:49:48,189 #           Statistics for Layer 2
+2024-12-11 13:49:48,192 #             RX packets 3  bytes 222
+2024-12-11 13:49:48,196 #             TX packets 3 (Multicast: 2)  bytes 0
+2024-12-11 13:49:48,199 #             TX succeeded 3 errors 0
+2024-12-11 13:49:48,202 #           Statistics for IPv6
+2024-12-11 13:49:48,205 #             RX packets 2  bytes 224
+2024-12-11 13:49:48,210 #             TX packets 3 (Multicast: 2)  bytes 224
+2024-12-11 13:49:48,213 #             TX succeeded 3 errors 0
+```
+take ip address with "scope: global" from IoT board (nrf52840dk)
+
+on rapsberry-pi console (stil in the "dongle console")
+```ping <inet6 addr - scope: global>```
+```shell
+2024-12-11 13:59:44,241 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=0 ttl=64 rssi=-60 dBm time=9.263 ms
+2024-12-11 13:59:45,238 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=1 ttl=64 rssi=-60 dBm time=6.663 ms
+2024-12-11 13:59:46,238 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=2 ttl=64 rssi=-60 dBm time=6.025 ms
+2024-12-11 13:59:46,238 # 
+2024-12-11 13:59:46,243 # --- 2001:db8:0:2:a41d:b3f5:5212:392f PING statistics ---
+2024-12-11 13:59:46,247 # 3 packets transmitted, 3 packets received, 0% packet loss
+2024-12-11 13:59:46,251 # round-trip min/avg/max = 6.025/7.317/9.263 ms
+```
+
+SUCCESS!
 
 
 ## _Telegram_ Bot Integration
@@ -185,70 +347,6 @@ You can control the LEDs by their associated number written on the board (LED1, 
 Inferentially the maximum number of target LEDs for the commands above is 4.
 
 
-## Bash Control
-
-Alternatively, mainly for testing purposes, you can control the LEDs directly via the RIOT-OS command line.
-
-Turn on an LED:
-```bash
-led_on <1-4> <1-4> ...
-```
-
-Turn off an LED:
-```bash
-led_off <1-4> <1-4> ...
-```
-
-Toggle an LED:
-```bash
-led_toggle <1-4> <1-4> ...
-```
-
-The rules for these commands are the same as those for the _Telegram_ bot.
-
-
-## Useful commands
-
-Flash the nRF52840 board:
-
-```bash
-BOARD=nrf52840dk make all flash term
-```
-
-List all available RIOT modules:
-
-```bash
-make info-modules
-```
-
-
-## Ask the Prof
-
-### Module ``shell_commands``
-
-[Makefile](src/Makefile) module ``shell_commands`` error:
-
-```bash
-Error - using unknown modules: shell_commands
-make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include:742: ..module-check] Error 1
-```
-
-Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
-
-**Answer**: Wrong name, correct name is `shell_cmds_default`
-
-### Use of "jsmn" library
-
-The jsmn library (parse JSON) is not included in RIOT OS despite it being mentioned in the [documentation](https://doc.riot-os.org/group__pkg__jsmn.html).
-
-**Answer**: Not a module but a package. Use `USEPKG` instead of `USEMODULE`. Refer to RIOT/tests/ for example 
-implementations of most features (modules and packages) for the correct and up-to-date implementation.
-
-### Makefile location
-
-Is there any way to use the project structure where the Makefile is not in the same directory as the main.c file?
-
-
 ## TODOs
 
 - [x] Which instant messaging protocol should we use?
@@ -278,3 +376,56 @@ Is there any way to use the project structure where the Makefile is not in the s
 - Final version of the code is in the repository
 - You have granted access to me
 - Send me your documentation
+
+
+## Quick Notes
+
+SAUL (Sensor Actuator Uber Layer) API ist wohl wichtig
+
+HTTP from device to (some) Gateway, Gateway translates to HTTPS.
+No HTTP on RIOT-OS, simple Telegram HTTP client implementation necessary.
+
+Change Temperature Sensor to onboard (cpu) temperature sensor
+
+
+## Ask the Prof
+
+### Module ``shell_commands``
+
+[Makefile](src/Makefile) module ``shell_commands`` error:
+
+```bash
+Error - using unknown modules: shell_commands
+make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include:742: ..module-check] Error 1
+```
+
+Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
+
+**Answer**: Wrong name, correct name is `shell_cmds_default`
+
+### Use of "jsmn" library
+
+The jsmn library (parse JSON) is not included in RIOT OS despite it being mentioned in the [documentation](https://doc.riot-os.org/group__pkg__jsmn.html).
+
+**Answer**: Not a module but a package. Use `USEPKG` instead of `USEMODULE`. Refer to RIOT/tests/ for example
+implementations of most features (modules and packages) for the correct and up-to-date implementation.
+
+### Makefile location
+
+Is there any way to use the project structure where the Makefile is not in the same directory as the main.c file?
+
+**Answer**: Yes, use wrapper Makefiles.
+
+
+# Random Documentation Leftovers
+
+## Temperature Sensor DHT20 (NOT IN USE)
+Not supported by RIOT-OS currently, which is why this project is using the CPU temperature.
+
+### PINs
+| DHT20 Pin | Function       | nRF52840-DK Pin           |
+|-----------|----------------|---------------------------|
+| VCC       | Power (3.3V)   | 3V3 on nRF52840-DK        |
+| GND       | Ground         | GND                       |
+| SDA       | I2C Data Line  | GPIO pin with I2C support |
+| SCL       | I2C Clock Line | GPIO pin with I2C support |

@@ -2,62 +2,49 @@
 // Created by vincent on 11/1/24.
 //
 
+#include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "periph/gpio.h"
-#include "board.h"
+#include "saul_reg.h"
+#include "phydat.h"
 #include "led_control.h"
 
-// Initialize GPIO for each LED
+// Write a value to an LED
+static int led_saul_write(const uint8_t led_id, const int16_t value) {
+    saul_reg_t *dev = saul_reg_find_nth(led_id);
+    if (!dev) {
+        printf("LED with ID %u not found\n", led_id);
+        return -1;
+    }
+
+    const phydat_t data = { .val = { value, 0, 0 }, .scale = 0, .unit = UNIT_UNDEF };
+
+    if (saul_reg_write(dev, &data) < 0) {
+        printf("Failed to write to LED with ID %u\n", led_id);
+        return -1;
+    }
+
+    return 0;
+}
+
+// Execute LED actions
+int led_control_execute(uint8_t led_id, const char *action) {
+    // SAUL LED ids on nrf52840dk start at 4
+    led_id = led_id + 4;
+
+    if (strcmp(action, "on") == 0) {
+        return led_saul_write(led_id, 255); // 255 is ON
+    }
+    if (strcmp(action, "off") == 0) {
+        return led_saul_write(led_id, 0); // 0 is OFF
+    }
+    const uint8_t value = atoi(action);
+    return led_saul_write(led_id, value);
+}
+
+// Initialize LEDs
 void led_control_init(void) {
-    gpio_init(LED0_PIN, GPIO_OUT);
-    gpio_init(LED1_PIN, GPIO_OUT);
-    gpio_init(LED2_PIN, GPIO_OUT);
-    gpio_init(LED3_PIN, GPIO_OUT);
-}
-
-// Turn on a specific LED
-// The LED*_PIN value for ON is 0
-void led_control_turn_on(uint8_t led) {
-    switch (led) {
-        case 0: gpio_clear(LED0_PIN); break;
-        case 1: gpio_clear(LED1_PIN); break;
-        case 2: gpio_clear(LED2_PIN); break;
-        case 3: gpio_clear(LED3_PIN); break;
-        default: break;
-    }
-}
-
-// Turn off a specific LED
-// The LED*_PIN value for OFF is 1
-void led_control_turn_off(uint8_t led) {
-    switch (led) {
-        case 0: gpio_set(LED0_PIN); break;
-        case 1: gpio_set(LED1_PIN); break;
-        case 2: gpio_set(LED2_PIN); break;
-        case 3: gpio_set(LED3_PIN); break;
-        default: break;
-    }
-}
-
-// Toggle a specific LED
-void led_control_toggle(uint8_t led) {
-    switch (led) {
-        case 0: gpio_toggle(LED0_PIN); break;
-        case 1: gpio_toggle(LED1_PIN); break;
-        case 2: gpio_toggle(LED2_PIN); break;
-        case 3: gpio_toggle(LED3_PIN); break;
-        default: break;
-    }
-}
-
-// Get the current state of a specific LED
-int led_control_get_state(uint8_t led) {
-    switch (led) {
-        case 0: return gpio_read(LED0_PIN);
-        case 1: return gpio_read(LED1_PIN);
-        case 2: return gpio_read(LED2_PIN);
-        case 3: return gpio_read(LED3_PIN);
-        default: return -1;  // Invalid LED index
-    }
+    printf("LED control initialized using SAUL\n");
 }

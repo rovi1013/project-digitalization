@@ -18,13 +18,17 @@ QUIET ?= 1
 # RIOT modules
 USEMODULE += shell
 USEMODULE += shell_cmds_default
+USEMODULE += saul_default
+USEMODULE += saul_reg
+USEMODULE += saul_nrf_temperature
 USEMODULE += periph_gpio
 #USEPKG += jsmn
 
 # Source files
-SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
+SRC += sensor_mock.c
+SRC += main.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

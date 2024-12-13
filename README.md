@@ -38,6 +38,16 @@ Read mock sensor data:
 mock <temp/hum>
 ```
 
+Configure and list network interfaces:
+```shell
+ifconfig
+```
+
+List more commands:
+```shell
+help
+```
+
 ### Network connectivity
 
 To connect the nRF52840-DK board to the internet we need the [border router setup](#border-router-setup).

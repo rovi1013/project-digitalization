@@ -8,7 +8,7 @@ control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via 
 
 ### Setup
 
-1. Connect the nRF52840-DK Board to Your PC and ensure the board is powered on (status LED).
+1. Connect the nRF52840-DK board to Your PC and ensure the board is powered on (status LED).
 2. Build and Flash the Application.
 
 Navigate to the project directory:
@@ -38,28 +38,40 @@ Read mock sensor data:
 mock <temp/hum>
 ```
 
+### Network connectivity
+
+To connect the nRF52840-DK board to the internet we need the [border router setup](#border-router-setup).
+
+Currently, this only allows for communication between the nRF52840-DK board and the nRF52840-Dongle.
+
 ### Useful commands
+
+Unlocking the nrf device:
+```shell
+openocd -c 'interface jlink; transport select swd;
+source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
+```
 
 Flash the nRF52840 board:
 
-```bash
+```shell
 BOARD=nrf52840dk make all flash term
 ```
 
 List all available RIOT modules:
 
-```bash
+```shell
 make info-modules
 ```
 
 
 ## Project Structure
 
-```bash
+```shell
 project/digitalization
 ├── Makefile                      # Wrapper Makefile
 ├── .env                          # Secrets storage file
-├── src/
+├── src/                          # Source Files - Main application
 │   ├── Makefile                  # Main Makefile
 │   ├── main.c                    # Main application file
 │   ├── led_control.c             # LED control source
@@ -67,6 +79,9 @@ project/digitalization
 │   ├── cmd_control.c             # Shell control source
 │   ├── cmd_control.h             # Shell control header
 │   └── further classes           # ...
+├── websocket/                    # Source Files - Websocket
+│   ├── websocket.py              # Main Websocket file
+│   └── further files             # ...
 ├── CMakeLists.txt                # CMake project file
 └── README.md                     # Documentation
 
@@ -198,14 +213,27 @@ See [link](https://doc.riot-os.org/group__net__sock__udp.html).
 JSON parser library. See [link](https://doc.riot-os.org/group__pkg__jsmn.html).
 
 
-## Network Connectivity
+## Border Router Setup
 The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
 usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For 
-this we are using a raspberry-pi and the nRF52840-Dongle. These two can be seen as a router.
+this we are using a raspberry-pi and the nRF52840-Dongle. These two together can be seen as the border router.
+
+The first thing to do is to set up the raspberry-pi and the nRF52840-Dongle. After this is done you can connect the
+nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity. 
+
+1. Set up raspberry-pi and nRF52840-Dongle
+2. Connect nRF52840-DK board and nRF52840-Dongle
+3. ??? Establish internet connectivity
 
 <!---
 TODO: INSERT NETWORK DIAGRAM
 --->
+
+
+### Raspberry-Pi Setup
+
+
+### nRF52840-Dongle Setup
 
 <!---
 TODO: REWRITE THIS SECTION
@@ -229,6 +257,9 @@ ssh to device -> authenticate with username and password
 
 riot@6lbr-3
 
+(maybe important?):
+install kea on raspberry-pi (sudo apt install kea)
+
 TODO: HOW TO SETUP RPI.
 
 ### nRF52840-Dongle Setup
@@ -240,6 +271,9 @@ nrfutil version >=6.1.1 required
 Change Makefile in RIOT/examples/gnrc_border_router/Makefile according to
 https://teaching.dahahm.de/teaching/ss23/project/2023/05/06/nrf52840dongle_6lbr.html
 Use gnrc_border_router from AllRIOT/RIOT repository
+
+set up dongle (from AllRIOT/examples/gnrc_boarder_router) on Linux machine (PC: AMD64 only, no ARM):
+BOARD=nrf52840dongle make all flash term
 
 make package (for nrf52840dongle)
 
@@ -253,13 +287,107 @@ flash the device with .zip: nrfutil dfu usb-serial --port /dev/ttyACM0 --package
 Test with: ...
 --->
 
-### Connecting the Dongle to the Internet
+### Dongle Connectivity
 
-(maybe important?):
-install kea on raspberry-pi (sudo apt install kea)
+As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected 
+to the nRF52840-Dongle. This section explains how this connection can be established.
 
-set up dongle (from AllRIOT/examples/gnrc_boarder_router) on Linux machine (PC: AMD64 only, no ARM):
-BOARD=nrf52840dongle make all flash term
+#### Prerequisites
+1. Plug the raspberry-pi into a socket.
+2. Connect the raspberry-pi a network via ethernet.
+3. Plug the nRF52840-Dongle into one of the USB ports of the raspberry-pi.
+
+#### Raspberry-Pi / nRF52840-Dongle Terminal Setup
+1. Connect to the raspberry-pi via ssh and enter the password:
+```shell
+ssh riot@<network-ip-addr>
+```
+<!--- MOVE gnrc_border_router TO ANOTHER FOLDER (OUT OF RIOT) AND ADJUST FOLLOWING POINT(S) --->
+2. In the raspberry-pi shell (riot@6lbr-3) go to the gnrc_border_router directory:
+```shell
+cd ~/AllRIOt/examples/gnrc_border_router
+```
+3. Open the border router terminal on the nRF52840-Dongle (requires a [flashed nRF52840-Dongle](#nrf52840-dongle-setup)):
+```shell
+BOARD=nrf52840dongle make term
+```
+4. Get the global ip address of the nRF52840-Dongle; if there are multiple interfaces you can differentiate them by the
+other parameters. For example the correct `Link type` is `wireless`. Also make sure to get the IPv6 address with 
+`scope: global`.
+```shell
+> ifconfig
+# Iface  6  HWaddr: 6E:0D:84:59:FC:9B 
+#           L2-PDU:1500  MTU:1500  HL:64  RTR  
+#           Source address length: 6
+#           Link type: wired
+#           inet6 addr: fe80::6c0d:84ff:fe59:fc9b  scope: link  VAL
+#           inet6 addr: aaaa::6c0d:84ff:fe59:fc9b  scope: global  VAL
+#           inet6 group: ff02::2
+#           inet6 group: ff02::1
+#           inet6 group: ff02::1:ff59:fc9b
+#           
+# Iface  7  HWaddr: 26:3E  Channel: 26  NID: 0x23  PHY: O-QPSK 
+#           Long HWaddr: E6:76:0A:9B:E2:59:A6:3E 
+#            State: IDLE 
+#           ACK_REQ  L2-PDU:102  MTU:1280  HL:64  RTR  
+#           RTR_ADV  6LO  IPHC  
+#           Source address length: 8
+#           Link type: wireless
+#           inet6 addr: fe80::e476:a9b:e259:a63e  scope: link  VAL
+#           inet6 addr: 2001:470:7347:c318:e476:a9b:e259:a63e  scope: global  VAL
+#           inet6 group: ff02::2
+#           inet6 group: ff02::1
+#           inet6 group: ff02::1:ff59:a63e
+#    
+```
+Correct IPv6 address from this example: `2001:470:7347:c318:e476:a9b:e259:a63e`
+
+#### nRF52840-DK Board Terminal Setup
+1. Connect the nRF52840-DK board to your (Linux) PC.
+2. Simply start the application as described in [Setup](#setup).
+3. Get the global ip address of the nRF52840-DK board; make sure to get the IPv6 address with `scope: global`.
+```shell
+> ifconfig
+# Iface  6  HWaddr: 39:2F  Channel: 26  NID: 0x23  PHY: O-QPSK 
+#           Long HWaddr: A6:1D:B3:F5:52:12:39:2F 
+#            State: IDLE 
+#           ACK_REQ  L2-PDU:102  MTU:1280  HL:64  6LO  
+#           IPHC  
+#           Source address length: 8
+#           Link type: wireless
+#           inet6 addr: fe80::a41d:b3f5:5212:392f  scope: link  VAL
+#           inet6 addr: 2001:470:7347:c318:a41d:b3f5:5212:392f  scope: global  VAL
+#           inet6 group: ff02::1
+#           
+#           Statistics for Layer 2
+#             RX packets 11  bytes 566
+#             TX packets 17 (Multicast: 8)  bytes 0
+#             TX succeeded 17 errors 0
+#           Statistics for IPv6
+#             RX packets 10  bytes 696
+#             TX packets 17 (Multicast: 8)  bytes 1048
+#             TX succeeded 17 errors 0
+#
+```
+Correct IPv6 address from this example: `2001:470:7347:c318:a41d:b3f5:5212:392f`
+
+#### Simple Ping between Dongle and Board
+From the border router terminal ([this](#raspberry-pi--nrf52840-dongle-terminal-setup)):
+```shell
+ping <board-ip-address>
+# With the example address from above:
+ping 2001:470:7347:c318:a41d:b3f5:5212:392f
+```
+
+From the board terminal ([this](#nrf52840-dk-board-terminal-setup)):
+```shell
+ping <border-router-ip-address>
+# With the example address from above:
+ping 2001:470:7347:c318:e476:a9b:e259:a63e
+```
+
+
+<!---
 
 connect dongle to raspberry-pi
 ssh to rapsberry-pi
@@ -307,6 +435,12 @@ on rapsberry-pi console (stil in the "dongle console")
 
 SUCCESS!
 
+--->
+
+### Internet Connectivity
+
+???
+
 
 ## _Telegram_ Bot Integration
 
@@ -329,17 +463,17 @@ used to control the device running on RIOT-OS. See "Commands" for a list of all 
 ### Bot Commands
 
 Turn on an LED:
-```bash
+```shell
 led <1-4> <1-4> ... on
 ```
 
 Turn off an LED:
-```bash
+```shell
 led <1-4> <1-4> ... off
 ```
 
 Toggle an LED:
-```bash
+```shell
 led <1-4> <1-4> ... toggle
 ```
 
@@ -394,7 +528,7 @@ Change Temperature Sensor to onboard (cpu) temperature sensor
 
 [Makefile](src/Makefile) module ``shell_commands`` error:
 
-```bash
+```shell
 Error - using unknown modules: shell_commands
 make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include:742: ..module-check] Error 1
 ```

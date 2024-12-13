@@ -24,11 +24,45 @@ USEMODULE += saul_nrf_temperature
 USEMODULE += periph_gpio
 #USEPKG += jsmn
 
+########################################
+################ ADJUST ################
+########################################
+# RIOT networking modules
+USEMODULE += netdev_default
+USEMODULE += auto_init_gnrc_netif
+# Activate ICMPv6 error messages
+USEMODULE += gnrc_icmpv6_error
+# Specify the mandatory networking module for a IPv6 routing node
+USEMODULE += gnrc_ipv6_default
+# Add a routing protocol
+# Additional networking modules that can be dropped if not needed
+USEMODULE += gnrc_icmpv6_echo
+USEMODULE += gnrc_dhcpv6_client
+USEMODULE += gnrc_dhcpv6_client_simple_pd
+USEMODULE += dhcpv6_client_ia_na
+USEMODULE += dhcpv6_client_ia_pd
+USEMODULE += shell_cmd_gnrc_udp
+# Add also the shell, some shell commands
+USEMODULE += ps
+USEMODULE += netstats_l2
+USEMODULE += netstats_ipv6
+USEMODULE += netstats_rpl
+
+# Optionally include DNS support. This includes resolution of names at an
+# upstream DNS server and the handling of RDNSS options in Router Advertisements
+# to auto-configure that upstream DNS server.
+USEMODULE += sock_dns              # include DNS client
+USEMODULE += gnrc_ipv6_nib_dns     # include RDNSS option handling
+USEMODULE += auto_init_sock_dns
+########################################
+################ ADJUST ################
+########################################
+
 # Source files
+SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
 SRC += sensor_mock.c
-SRC += main.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

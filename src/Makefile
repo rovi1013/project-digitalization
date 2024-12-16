@@ -20,11 +20,16 @@ USEMODULE += shell
 USEMODULE += shell_cmds_default
 USEMODULE += saul_default
 USEMODULE += saul_reg
-USEMODULE += saul_nrf_temperature
 USEMODULE += periph_gpio
 USEMODULE += ztimer
 USEMODULE += printf_float
 #USEPKG += jsmn
+
+# Use module only for non-native boards
+ifneq ($(BOARD),native)
+USEMODULE += saul_nrf_temperature
+endif
+
 
 ########################################
 ################ ADJUST ################

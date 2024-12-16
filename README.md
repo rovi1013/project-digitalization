@@ -74,6 +74,26 @@ List all available RIOT modules:
 make info-modules
 ```
 
+### Docker Alternative
+
+Alternatively it is possible to run the application in a docker container. It is only possible to use the 
+`BOARD=native` environment, which requires mocking of sensor data. This will hide possible issues with e.g. reading 
+real sensor data or getting sensor information.
+
+Make sure the docker daemon is running.
+
+To build the image simply use the [Dockerfile](./Dockerfile):
+```shell
+docker build -t riot-app .
+```
+
+Then you can run the container:
+```shell
+docker run -it riot-app
+```
+
+ 
+
 
 ## Project Structure
 
@@ -193,7 +213,28 @@ Defines error codes and provides error messages custom for each error code.
 Convert a timestamp (&micro;s) into the format hh:mm:ss.
 
 
+## Application Insights and Analysis
+
+An overview of the different tools and analysis performed on this application in order to provide the best result 
+possible and avoid common mistakes and causes for errors. 
+
+### Tool _valgrind_
+
+This tool allows to analyse the application, especially the ability to discover memory related issues. Only works for 
+x86, x86_64 and ARM architectures in environments supporting virtual memory, this unfortunately also means we can only 
+check our application build with `BOARD=native`.
+
+Run _valgrind_:
+```shell
+valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
+--show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
+```
+
+Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
+
+
 ## RIOT-OS Modules
+
 A short description of each module, its purpose, why it was used, and where in the project it is utilized.
 
 ### Module SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)
@@ -251,6 +292,7 @@ JSON parser library. See [link](https://doc.riot-os.org/group__pkg__jsmn.html).
 
 
 ## Border Router Setup
+
 The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
 usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For 
 this we are using a raspberry-pi and the nRF52840-Dongle. These two together can be seen as the border router.

@@ -2,10 +2,10 @@
 // Created by vincent on 12/12/24.
 //
 
+#define _GNU_SOURCE
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <tgmath.h>
 
 #include "saul_reg.h"
 #include "saul.h"
@@ -14,24 +14,19 @@
 #include "utils/timestamp_convert.h"
 #include "utils/error_handler.h"
 
-// Custom strdup implementation
-char *my_strdup(const char *src) {
-    if (src == NULL) {
-        return NULL;
-    }
-    const size_t len = strlen(src) + 1; // +1 for null terminator
-    char *dup = malloc(len);
-    if (dup == NULL) {
-        return NULL;
-    }
-    memcpy(dup, src, len);
-    return dup;
-}
+// // Custom strdup implementation
+// char *my_strdup(const char *src) {
+//     const size_t len = strlen(src) + 1;     // String plus '\0'
+//     char *dst = malloc(len);                // Allocate space
+//     if (dst == NULL) return NULL;           // No memory
+//     memcpy (dst, src, len);                 // Copy the block
+//     return dst;                             // Return the new string
+// }
 
 // Execute CPU temperature action
 cpu_temperature_t cpu_temperature_execute(void) {
     phydat_t data;
-    cpu_temperature_t result = {
+    cpu_temperature_t cpu_temp = {
         .temperature = 0,
         .scale = 0,
         .device_name = NULL,
@@ -39,33 +34,56 @@ cpu_temperature_t cpu_temperature_execute(void) {
         .status = ERROR_UNKNOWN
     };
 
-    saul_reg_t *dev = saul_reg_find_type(SAUL_SENSE_TEMP);
+    saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
+
+#ifdef BOARD_NATIVE
+    // Ignore unused variables
+    (void) data;
+    (void) device;
+    // Mock temperature data for the native platform
+    cpu_temp.temperature = 2500; // Mock value (25.00°C)
+    cpu_temp.scale = -2;
+    cpu_temp.device_name = strdup("Mock-Temperature-Sensor");
+    cpu_temp.timestamp = 0;
+    cpu_temp.status = 0;
+#else
 
     // Check device correctness
-    if (dev == NULL) {
-        result.status = ERROR_NO_SENSOR;
-        return result;
+    if (device == NULL) {
+        cpu_temp.status = ERROR_NO_SENSOR;
+        return cpu_temp;
     }
-    result.device_name = my_strdup(dev->name);
+    cpu_temp.device_name = strdup(device->name);
 
     // Check correct device name allocation
-    if (result.device_name == NULL) {
-        result.status = ERROR_MEMORY_FAIL;
-        return result;
+    if (cpu_temp.device_name == NULL) {
+        cpu_temp.status = ERROR_MEMORY_FAIL;
+        return cpu_temp;
     }
 
     // Read data from device
-    result.timestamp = ztimer_now(ZTIMER_USEC);
-    if (saul_reg_read(dev, &data) < 0) {
-        result.status = ERROR_READ_FAIL;
-        return result;
+    cpu_temp.timestamp = ztimer_now(ZTIMER_USEC);
+    if (saul_reg_read(device, &data) < 0) {
+        cpu_temp.status = ERROR_READ_FAIL;
+        return cpu_temp;
     }
 
-    result.temperature = data.val[0];
-    result.scale = data.scale;
-    result.status = 0;
+    cpu_temp.temperature = data.val[0];
+    cpu_temp.scale = data.scale;
+    cpu_temp.status = 0;
 
-    return result;
+#endif
+
+    return cpu_temp;
+}
+
+// Small helper function for circumvent using a (complex) math library
+double scale_factor(const int8_t scale) {
+    static const double scale_factors[] = {0.1, 0.01, 0.001};
+    if (scale == -1) { return scale_factors[0]; }
+    if (scale == -2) { return scale_factors[1]; }
+    if (scale == -3) { return scale_factors[2]; }
+    return 1.0;
 }
 
 void cpu_temperature_print(const cpu_temperature_t *temp) {
@@ -74,7 +92,7 @@ void cpu_temperature_print(const cpu_temperature_t *temp) {
 
     if (temp->status == 0) {
         // Scale the temperature value
-        const double scaled_temp = temp->temperature * pow(10, temp->scale);
+        const double scaled_temp = temp->temperature * scale_factor(temp->scale);
 
         // Print temperature and device info
         printf("[%s] The temperature of %s is %.2f °C\n",

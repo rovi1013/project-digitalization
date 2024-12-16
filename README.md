@@ -302,7 +302,7 @@ nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity.
 
 1. Set up raspberry-pi and nRF52840-Dongle
 2. Connect nRF52840-DK board and nRF52840-Dongle
-3. ??? Establish internet connectivity
+3. AUTOMATIC: Establish internet connectivity
 
 <!---
 TODO: INSERT NETWORK DIAGRAM
@@ -325,6 +325,8 @@ dist/tools/tapsetup/tapsetup -u \<interface> ; use ethernet as interface to add 
 ### Raspberry-Pi Setup
 
 ip addr show or /sbin/ifconfig
+
+https://unix.stackexchange.com/questions/188367/get-names-of-devices-on-the-network
 
 -> look up address range
 
@@ -601,6 +603,8 @@ HTTP from device to (some) Gateway, Gateway translates to HTTPS.
 No HTTP on RIOT-OS, simple Telegram HTTP client implementation necessary.
 
 Change Temperature Sensor to onboard (cpu) temperature sensor
+
+Memory für device name nicht dynamisch allokieren, statisch ist besser!
 
 
 ## Ask the Prof

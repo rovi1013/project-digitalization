@@ -10,20 +10,21 @@
 #include "saul_reg.h"
 #include "phydat.h"
 #include "led_control.h"
+#include "utils/error_handler.h"
 
 // Write a value to an LED
 static int led_saul_write(const uint8_t led_id, const int16_t value) {
     saul_reg_t *dev = saul_reg_find_nth(led_id);
     if (!dev) {
         printf("LED with ID %u not found\n", led_id);
-        return -1;
+        return ERROR_NO_SENSOR;
     }
 
     const phydat_t data = { .val = { value, 0, 0 }, .scale = 0, .unit = UNIT_UNDEF };
 
     if (saul_reg_write(dev, &data) < 0) {
         printf("Failed to write to LED with ID %u\n", led_id);
-        return -1;
+        return ERROR_LED_WRITE;
     }
 
     return 0;
@@ -40,11 +41,12 @@ int led_control_execute(uint8_t led_id, const char *action) {
     if (strcmp(action, "off") == 0) {
         return led_saul_write(led_id, 0); // 0 is OFF
     }
+    // Use 8-bit integer to restrict value to 0-255
     const uint8_t value = atoi(action);
     return led_saul_write(led_id, value);
 }
 
 // Initialize LEDs
 void led_control_init(void) {
-    printf("LED control initialized using SAUL\n");
+    puts("LED control initialized using SAUL");
 }

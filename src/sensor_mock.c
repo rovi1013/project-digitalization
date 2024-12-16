@@ -40,7 +40,7 @@ int sensor_mock_execute(const char *action) {
 
 // Initialize mock sensor
 void sensor_mock_init(void) {
-    printf("Mock temperature and humidity sensor initialized\n");
+    puts("Mock temperature and humidity sensor initialized");
 }
 
 

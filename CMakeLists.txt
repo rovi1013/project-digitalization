@@ -12,6 +12,10 @@ set(SOURCE_FILES
         src/sensor_mock.h
         src/cpu_temperature.c
         src/cpu_temperature.h
+        src/utils/timestamp_convert.c
+        src/utils/timestamp_convert.h
+        src/utils/error_handler.c
+        src/utils/error_handler.h
 )
 
 # Set RIOT OS base directory

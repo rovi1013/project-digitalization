@@ -9,14 +9,16 @@
 #include "cpu_temperature.h"
 #include "sensor_mock.h"
 #include "cmd_control.h"
+#include "utils/error_handler.h"
 
 #include <stdlib.h>
 
 // Handle LED control commands
 static int led_control(const int argc, char **argv) {
     if (argc != 3) {
-        printf("Usage: led <#led> <on/off/brightness>\n");
-        return -1;
+        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        puts("Usage: led <#led> <on/off/brightness>");
+        return ERROR_INVALID_ARGS;
     }
 
     const uint8_t led_id = atoi(argv[1]);
@@ -28,18 +30,24 @@ static int cpu_temp_control(const int argc, char **argv) {
     (void)argv;
 
     if (argc != 1) {
-        printf("Usage: cpu-temp\n");
-        return -1;
+        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        puts("Usage: cpu-temp");
+        return ERROR_INVALID_ARGS;
     }
 
-    return cpu_temperature_execute();
+    cpu_temperature_t temp = cpu_temperature_execute();
+    cpu_temperature_print(&temp);
+    cpu_temperature_cleanup(&temp);
+
+    return 0;
 }
 
 // Handle mock sensor commands
 static int sensor_mock_control(const int argc, char **argv) {
     if (argc != 2) {
-        printf("Usage: mock <temp/hum>\n");
-        return -1;
+        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        puts("Usage: mock <temp/hum>");
+        return ERROR_INVALID_ARGS;
     }
 
     return sensor_mock_execute(argv[1]);
@@ -55,7 +63,7 @@ static const shell_command_t cmd_control_shell_commands[] = {
 
 // Initialize command control
 void cmd_control_init(void) {
-    printf("Initializing command control shell\n");
+    puts("Initializing command control shell");
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(cmd_control_shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 }

@@ -22,6 +22,8 @@ USEMODULE += saul_default
 USEMODULE += saul_reg
 USEMODULE += saul_nrf_temperature
 USEMODULE += periph_gpio
+USEMODULE += ztimer
+USEMODULE += printf_float
 #USEPKG += jsmn
 
 ########################################
@@ -58,11 +60,19 @@ USEMODULE += auto_init_sock_dns
 ################ ADJUST ################
 ########################################
 
+# Our custom module(s)
+DIRS += utils
+USEMODULE += custom_utils
+
+# Include path for utils folder
+INCLUDES += -I$(CURDIR)/utils
+
 # Source files
 SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
 SRC += sensor_mock.c
+
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

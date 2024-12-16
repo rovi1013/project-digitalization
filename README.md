@@ -81,15 +81,17 @@ make info-modules
 project/digitalization
 ├── Makefile                      # Wrapper Makefile
 ├── .env                          # Secrets storage file
-├── src/                          # Source Files - Main application
+├── src/
 │   ├── Makefile                  # Main Makefile
 │   ├── main.c                    # Main application file
-│   ├── led_control.c             # LED control source
-│   ├── led_control.h             # LED control header
-│   ├── cmd_control.c             # Shell control source
-│   ├── cmd_control.h             # Shell control header
-│   └── further classes           # ...
-├── websocket/                    # Source Files - Websocket
+│   ├── led_control               # LED control
+│   ├── cmd_control               # Shell control
+│   ├── further classes           # ...
+│   └── utils/
+│       ├── Makefile              # Custom module utils
+│       ├── timestamp_convert     # Convert timestamps to hh:mm:ss
+│       └── error_handler         # Handler error messaging
+├── websocket/
 │   ├── websocket.py              # Main Websocket file
 │   └── further files             # ...
 ├── CMakeLists.txt                # CMake project file
@@ -111,9 +113,9 @@ Provides the central shell command interface for controlling LEDs, reading CPU t
 **cmd_control_init**
 * Initialize the shell command interface.
 * Register the following commands:
-  * led <id> <action>: Controls LEDs (see [led_control](#class-led_control)).
+  * led \<id> \<action>: Controls LEDs (see [led_control](#class-led_control)).
   * cpu-temp: Reads the CPU temperature (see [cpu_temperature](#class-cpu_temperature)).
-  * mock <temp/hum>: Reads temperature or humidity from the mock sensor (see [sensor_mock](#class-sensor_mock)).
+  * mock \<temp/hum>: Reads temperature or humidity from the mock sensor (see [sensor_mock](#class-sensor_mock)).
 
 
 ### Class led_control
@@ -138,14 +140,27 @@ Manages LED control using SAUL abstraction.
 
 ### Class cpu_temperature
 
-Reads the CPU temperature data using SAUL abstraction.
+Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html))
+
+**cpu_temperature_t**
+* temperature: The temperature of the CPU.
+* scale: Scale of the temperature measurement (10^scale).
+* device: Name of the device the measurement is obtained from.
+* timestamp: Time of the measurement (Time starts at application start).
+* status: Status of the measurement, 0 is success, negative values indicate an [error](#class-error_handler).
 
 **cpu_temperature_init**
 * Initializes CPU temperature sensor.
 * NO-OP for SAUL devices, "logs initialization".
 
 **cpu_temperature_execute**
-* Reads the CPU temperature and prints it in degrees Celsius.
+* Reads the CPU temperature and returns it as cpu_temperature_t.
+
+**cpu_temperature_print**
+* Prints cpu_temperature_t to the console.
+* Differentiation between status == 0 and status < 0
+* Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
+* Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
 
 ### Class sensor_mock
 
@@ -164,6 +179,18 @@ Generates random temperature and humidity values for testing and development pur
 * Reads mock sensor data:
   * "temp": Prints the temperature.
   * "hum": Prints the humidity.
+
+### Utility Classes
+
+These Classes are additional utilities used in the application. They are included into the application as a module.
+
+#### Class error_handler
+
+Defines error codes and provides error messages custom for each error code.
+
+### Class timstamp_convert
+
+Convert a timestamp (&micro;s) into the format hh:mm:ss.
 
 
 ## RIOT-OS Modules
@@ -251,7 +278,7 @@ TODO: REWRITE THIS SECTION
 IPv6 lowpan to connect BLE (Bluetooth low energy) of nrf board to standard ipv6, while saving a lot of size for the transmission (e.g. IPv6 header size).
 gnrc_networking make all term for interface, use variable PORT (from makefile) to connect if instance already running
 Connect to internet:
-dist/tools/tapsetup/tapsetup -u <interface> ; use ethernet as interface to add this to the network
+dist/tools/tapsetup/tapsetup -u \<interface> ; use ethernet as interface to add this to the network
 
 ### Raspberry-Pi Setup
 
@@ -269,6 +296,8 @@ riot@6lbr-3
 
 (maybe important?):
 install kea on raspberry-pi (sudo apt install kea)
+
+https://kea.readthedocs.io/en/latest/arm/dhcp6-srv.html
 
 TODO: HOW TO SETUP RPI.
 
@@ -487,7 +516,7 @@ Toggle an LED:
 led <1-4> <1-4> ... toggle
 ```
 
-You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> <1-4>).
+You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> \<1-4>).
 Inferentially the maximum number of target LEDs for the commands above is 4.
 
 

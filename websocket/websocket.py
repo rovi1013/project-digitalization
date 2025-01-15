@@ -8,10 +8,7 @@ app = FastAPI()
 # Get Token from .env file
 load_dotenv(".env")
 telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{telegram_bot_token}"
-
-# Boot server with "uvicorn websocket:app --reload
-
+telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}"
 
 @app.post("/send_message/")
 async def send_message(request: Request):
@@ -22,7 +19,7 @@ async def send_message(request: Request):
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{TELEGRAM_API_URL}/sendMessage",
+                f"{telegram_api_url}/sendMessage",
                 json={"chat_id": chat_id, "text": text},
             )
 
@@ -42,7 +39,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{TELEGRAM_API_URL}/sendMessage",
+                    f"{telegram_api_url}/sendMessage",
                     json={"chat_id": chat_id, "text": text},
                 )
 
@@ -62,7 +59,7 @@ async def get_updates(offset: int = None, timeout: int = 0):
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{TELEGRAM_API_URL}/getUpdates", params=params
+                f"{telegram_api_url}/getUpdates", params=params
             )
 
         print(response.json)

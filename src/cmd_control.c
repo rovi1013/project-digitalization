@@ -3,14 +3,13 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "shell.h"
 #include "led_control.h"
 #include "cpu_temperature.h"
 #include "cmd_control.h"
 #include "utils/error_handler.h"
-
-#include <stdlib.h>
 
 // Handle LED control commands
 static int led_control(const int argc, char **argv) {
@@ -34,9 +33,8 @@ static int cpu_temp_control(const int argc, char **argv) {
         return ERROR_INVALID_ARGS;
     }
 
-    cpu_temperature_t temp = cpu_temperature_execute();
+    const cpu_temperature_t temp = cpu_temperature_execute();
     cpu_temperature_print(&temp);
-    cpu_temperature_cleanup(&temp);
 
     return 0;
 }

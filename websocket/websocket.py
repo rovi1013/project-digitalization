@@ -1,10 +1,14 @@
 from fastapi import FastAPI, WebSocket, Request
+from dotenv import load_dotenv
 import httpx
+import os
 
 app = FastAPI()
 
-TELEGRAM_BOT_TOKEN = "7975746972:AAEJo471A-1vMk76RU0-1HY0epnl0IimtWE"
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+# Get Token from .env file
+load_dotenv(".env")
+telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{telegram_bot_token}"
 
 # Boot server with "uvicorn websocket:app --reload
 

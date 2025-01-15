@@ -11,3 +11,6 @@ flash:
 
 term:
 	$(MAKE) -C src term
+
+info-modules:
+	$(MAKE) -C src info-modules

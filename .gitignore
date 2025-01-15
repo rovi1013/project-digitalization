@@ -1,9 +1,10 @@
 .vscode
 .idea
 .temp
+.venv
 
 *.draft
 
 bin
 /cmake-build-debug/
-/.env
+/websocket/.env

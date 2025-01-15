@@ -60,7 +60,7 @@ source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
 Flash the nRF52840 board:
 
 ```shell
-BOARD=nrf52840dk make all flash term
+BOARD=nrf52840dk make clean all flash term
 ```
 
 List all available RIOT modules:

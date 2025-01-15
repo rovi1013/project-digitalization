@@ -1,9 +1,3 @@
-<style>
-  table, th, td {
-    text-align: left
-  }
-</style>
-
 # Project Digitalization (WiSe 2024/35)
 
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
@@ -188,10 +182,10 @@ phydat_t is a structure that standardizes the representation of physical data ac
 <table>
   <thead>
     <tr>
-        <th>Data Field</th>
-        <th>Description</th>
-        <th>Example Value</th>
-        <th>Data Type</th>
+        <th style="text-align: left;">Data Field</th>
+        <th style="text-align: left;">Description</th>
+        <th style="text-align: left;">Example Value</th>
+        <th style="text-align: left;">Data Type</th>
     </tr>
   </thead>
   <tbody>
@@ -214,7 +208,7 @@ phydat_t is a structure that standardizes the representation of physical data ac
         <td>int8_t</td>
     </tr>
   </tbody>
-</table> 
+</table>
 
 The example values from the table above result in 0.42 = temp * 10^(-2) UNIT_TEMP_C which means temp = 42°C.
 

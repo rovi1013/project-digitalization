@@ -1,9 +1,3 @@
-<style>
-table, th, td {
-    text-align: left
-}
-</style>
-
 # Utility Classes Documentation
 
 This is the utilities documentation and an overview of its classes ([/src/utils](../utils)). These Classes are 
@@ -16,10 +10,10 @@ The class error_handler defines error codes and provides error messages custom f
 <table>
     <thead>
         <tr>
-            <th>Error Category</th>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Description</th>
+            <th style="text-align: left;">Error Category</th>
+            <th style="text-align: left;">Code</th>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: left;">Description</th>
         </tr>
     </thead>
     <tbody>

@@ -24,3 +24,11 @@ And copy the telegram bot token into it like this:
 ```dotenv
 TELEGRAM_BOT_TOKEN=<actual_telegram_bot_token>
 ```
+
+
+## Usage
+
+Run the application using uvicorn:
+```shell
+uvicorn websocket:app --reload
+```

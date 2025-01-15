@@ -8,8 +8,6 @@ set(SOURCE_FILES
         src/led_control.h
         src/cmd_control.c
         src/cmd_control.h
-        src/sensor_mock.c
-        src/sensor_mock.h
         src/cpu_temperature.c
         src/cpu_temperature.h
         src/utils/timestamp_convert.c

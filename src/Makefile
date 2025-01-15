@@ -76,7 +76,6 @@ INCLUDES += -I$(CURDIR)/utils
 SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
-SRC += sensor_mock.c
 
 
 # RIOT makefile

@@ -33,11 +33,6 @@ Read CPU temperature:
 cpu-temp
 ```
 
-Read mock sensor data:
-```shell
-mock <temp/hum>
-```
-
 Configure and list network interfaces:
 ```shell
 ifconfig
@@ -121,19 +116,18 @@ project/digitalization
 
 Entry point of the application that initializes all modules.
 
-Currently, the initialization methods led_control_init(), cpu_temperature_init(), and sensor_mock_init() are NO-OP methods, 
+Currently, the initialization methods led_control_init(), cpu_temperature_init() are NO-OP methods, 
 which only return a "success" message. Only cmd_control_init() is actually initializing something: the shell.
 
 ### Class cmd_control
 
-Provides the central shell command interface for controlling LEDs, reading CPU temperature, and accessing the mock sensor.
+Provides the central shell command interface for controlling LEDs, reading CPU temperature.
 
 **cmd_control_init**
 * Initialize the shell command interface.
 * Register the following commands:
   * led \<id> \<action>: Controls LEDs (see [led_control](#class-led_control)).
   * cpu-temp: Reads the CPU temperature (see [cpu_temperature](#class-cpu_temperature)).
-  * mock \<temp/hum>: Reads temperature or humidity from the mock sensor (see [sensor_mock](#class-sensor_mock)).
 
 
 ### Class led_control
@@ -179,24 +173,6 @@ Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://do
 * Differentiation between status == 0 and status < 0
 * Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
 * Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
-
-### Class sensor_mock
-
-Generates random temperature and humidity values for testing and development purposes.
-
-**sensor_mock_init**
-* Initializes mock sensor.
-* NO-OP for SAUL devices, "logs initialization".
-
-**generate_mock_data**
-* Randomly generates mock data:
-  * "temp": Generates a random temperature (0–50°C).
-  * "hum": Generates a random humidity (0–100%).
-
-**sensor_mock_execute**
-* Reads mock sensor data:
-  * "temp": Prints the temperature.
-  * "hum": Prints the humidity.
 
 ### Utility Classes
 

@@ -1,4 +1,4 @@
-# name of your application
+# Name of the application
 APPLICATION = project-digitalization
 
 # If no BOARD is found in the environment, use this default:
@@ -76,7 +76,7 @@ INCLUDES += -I$(CURDIR)/utils
 SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
-
+SRC += cpu_temperature.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

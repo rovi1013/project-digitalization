@@ -1,7 +1,59 @@
+<style>
+  table, th, td {
+    text-align: left
+  }
+</style>
+
 # Project Digitalization (WiSe 2024/35)
 
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
 control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
+
+
+## Prerequisites
+
+### RIOT-OS Prerequisites
+
+RIOT-OS requires some (linux) packages to function correctly. It is recommended to read the official 
+[RIOT-OS Getting Started](https://doc.riot-os.org/getting-started.html) documentation. However, for the purpose of this 
+application it should be sufficient to download the following packages, using the appropriate package manager for your
+linux distribution: 
+* git
+* gcc-arm-none-eabi
+* make
+* gcc-multilib
+* libstdc++-arm-none-eabi-newlib
+* openocd gdb-multiarch
+* doxygen
+* wget
+* unzip
+* python3-serial
+
+With Ubuntu (using apt) you can run this command:
+```shell
+sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3-serial
+```
+
+### RIOT-OS Submodule
+
+RIOT-OS is included in this project as a submodule, must be downloaded in order to use this application. Sometimes 
+this modules won't load automatically when cloning the project. This can be resolved by running the following 
+commands (from [/project-digitalization](../project-digitalization)).
+```shell
+git submodule init
+git submodule update
+```
+
+### Network Connectivity
+
+The application requires an interface (tap0) to be set up beforehand:
+```shell
+sudo ip tuntap add dev tap0 mode tap user $(whoami)
+sudo ip link set tap0 up
+```
+
+Additionally, for communication with the telegram bot the nRF52840-DK board requires an internet connection. This connection is 
+established by following the steps described in [Border Router Setup](#border-router-setup).
 
 
 ## Usage
@@ -18,7 +70,7 @@ cd project-digitalization
 
 Build the application (this includes RIOT-OS) and open a terminal to the board:
 ```shell
-make all clean flash term
+make clean all flash term
 ```
 
 ### Shell Commands
@@ -43,11 +95,6 @@ List more commands:
 help
 ```
 
-### Network connectivity
-
-To connect the nRF52840-DK board to the internet we need the [border router setup](#border-router-setup).
-
-Currently, this only allows for communication between the nRF52840-DK board and the nRF52840-Dongle.
 
 ### Useful commands
 
@@ -57,34 +104,16 @@ openocd -c 'interface jlink; transport select swd;
 source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
 ```
 
-Flash the nRF52840 board:
+Using the "native" board for development:
 
 ```shell
-BOARD=nrf52840dk make clean all flash term
+BOARD=native make clean all term
 ```
 
 List all available RIOT modules:
 
 ```shell
 make info-modules
-```
-
-### Docker Alternative
-
-Alternatively it is possible to run the application in a docker container. It is only possible to use the 
-`BOARD=native` environment, which requires mocking of sensor data. This will hide possible issues with e.g. reading 
-real sensor data or getting sensor information.
-
-Make sure the docker daemon is running.
-
-To build the image simply use the [Dockerfile](./Dockerfile):
-```shell
-docker build -t riot-app .
-```
-
-Then you can run the container:
-```shell
-docker run -it riot-app
 ```
 
 
@@ -112,112 +141,26 @@ project/digitalization
 
 ```
 
-### Main Class
+## Main Application
 
-Entry point of the application that initializes all modules.
+The main application running on the nRF52840-DK using RIOT-OS.
 
-Currently, the initialization methods led_control_init(), cpu_temperature_init() are NO-OP methods, 
-which only return a "success" message. Only cmd_control_init() is actually initializing something: the shell.
+### Main Classes
 
-### Class cmd_control
-
-Provides the central shell command interface for controlling LEDs, reading CPU temperature.
-
-**cmd_control_init**
-* Initialize the shell command interface.
-* Register the following commands:
-  * led \<id> \<action>: Controls LEDs (see [led_control](#class-led_control)).
-  * cpu-temp: Reads the CPU temperature (see [cpu_temperature](#class-cpu_temperature)).
-
-
-### Class led_control
-
-Manages LED control using SAUL abstraction.
-
-**led_control_init**
-* Initializes LED devices.
-* NO-OP for SAUL devices, "logs initialization".
-
-**led_saul_write**
-* Generates the [phydat_t](#data-type-phydat_t) structure
-* Performs the SAUL write operation
-
-**led_control_execute**
-* Executes an LED action based on:
-  * led_id (0 to 3): The ID of the LED to control.
-  * action: One of the following:
-    * "on": Turns the LED on.
-    * "off": Turns the LED off.
-    * Numeric value (e.g., "128"): Sets LED brightness.
-
-### Class cpu_temperature
-
-Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html))
-
-**cpu_temperature_t**
-* temperature: The temperature of the CPU.
-* scale: Scale of the temperature measurement (10^scale).
-* device: Name of the device the measurement is obtained from.
-* timestamp: Time of the measurement (Time starts at application start).
-* status: Status of the measurement, 0 is success, negative values indicate an [error](#class-error_handler).
-
-**cpu_temperature_init**
-* Initializes CPU temperature sensor.
-* NO-OP for SAUL devices, "logs initialization".
-
-**cpu_temperature_execute**
-* Reads the CPU temperature and returns it as cpu_temperature_t.
-
-**cpu_temperature_print**
-* Prints cpu_temperature_t to the console.
-* Differentiation between status == 0 and status < 0
-* Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
-* Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
+These classes provide the main functionality for the application and are located in [/src](./src/utils). For further 
+information on their functionality see [Classes README](./src/README.md).
 
 ### Utility Classes
 
-These Classes are additional utilities used in the application. They are included into the application as a module.
-
-#### Class error_handler
-
-Defines error codes and provides error messages custom for each error code.
-
-### Class timstamp_convert
-
-Convert a timestamp (&micro;s) into the format hh:mm:ss.
+These Classes are additional utilities used in the application and are located in [/utils](./src/utils). They are 
+included into the application as a module. For further information on their functionality see [Utilities README](./src/utils/README.md).
 
 
-## Application Insights and Analysis
+## Python Websocket
 
-An overview of the different tools and analysis performed on this application in order to provide the best result 
-possible and avoid common mistakes and causes for errors. 
-
-### Tool valgrind
-
-This tool allows to analyse the application, especially the ability to discover memory related issues. Only works for 
-x86, x86_64 and ARM architectures in environments supporting virtual memory, this unfortunately also means we can only 
-check our application build with `BOARD=native`.
-
-Run valgrind:
-```shell
-valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
---show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
-```
-
-Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
-
-### Tool dive
-
-This tool allows to analyse docker image layers.
-
-Run `dive`:
-```shell
-docker run --rm -it \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    wagoodman/dive:latest riot-app:latest
-```
-
-Dive [Documentation](https://github.com/wagoodman/dive).
+The websocket running separately used to convert the messages, coming from the nRF52740-DK board, into https requests
+for the telegram bot. The websocket is located in [/websocket](./websocket), further information on its functionality
+can be found in the [Websocket README](./websocket/README.md).
 
 
 ## RIOT-OS Modules
@@ -242,11 +185,36 @@ More information here: [SAUL Driver](https://doc.riot-os.org/group__drivers__sau
 
 phydat_t is a structure that standardizes the representation of physical data across sensors and actuators.
 
-| Data Field | Description                         | Example Value | Data Type |
-|------------|-------------------------------------|---------------|-----------|
-| val[ ]     | Stores (up to) 3-dimensional values | 0.42,0,0      | int16_t   |
-| unit       | The (physical) unit of the data     | UNIT_TEMP_C   | uint8_t   |
-| scale      | The scale factor (10^factor)        | -2            | int8_t    |                
+<table>
+  <thead>
+    <tr>
+        <th>Data Field</th>
+        <th>Description</th>
+        <th>Example Value</th>
+        <th>Data Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <td>val[ ]</td>
+        <td>Stores (up to) 3-dimensional values	</td>
+        <td>0.42,0,0</td>
+        <td>int16_t</td>
+    </tr>
+    <tr>
+        <td>unit</td>
+        <td>The (physical) unit of the data</td>
+        <td>UNIT_TEMP_C</td>
+        <td>uint8_t</td>
+    </tr>
+    <tr>
+        <td>scale</td>
+        <td>The scale factor (10^factor)</td>
+        <td>-2</td>
+        <td>int8_t</td>
+    </tr>
+  </tbody>
+</table> 
 
 The example values from the table above result in 0.42 = temp * 10^(-2) UNIT_TEMP_C which means temp = 42°C.
 
@@ -278,6 +246,39 @@ See [link](https://doc.riot-os.org/group__net__sock__udp.html).
 JSON parser library. See [link](https://doc.riot-os.org/group__pkg__jsmn.html).
 
 
+## Application Insights and Analysis
+
+An overview of the different tools and analysis performed on this application in order to provide the best result
+possible and avoid common mistakes and causes for errors.
+
+### Tool valgrind
+
+This tool allows to analyse the application, especially the ability to discover memory related issues. Only works for
+x86, x86_64 and ARM architectures in environments supporting virtual memory, this unfortunately also means we can only
+check our application build with `BOARD=native`.
+
+Run valgrind:
+```shell
+valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
+--show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
+```
+
+Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
+
+### Tool dive
+
+This tool allows to analyse docker image layers.
+
+Run `dive`:
+```shell
+docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wagoodman/dive:latest riot-app:latest
+```
+
+Dive [Documentation](https://github.com/wagoodman/dive).
+
+
 ## Border Router Setup
 
 The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
@@ -289,11 +290,11 @@ nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity.
 
 1. Set up raspberry-pi and nRF52840-Dongle
 2. Connect nRF52840-DK board and nRF52840-Dongle
-3. AUTOMATIC: Establish internet connectivity
+3. AUTOMATICALLY: Establish internet connectivity
 
-<!---
-TODO: INSERT NETWORK DIAGRAM
---->
+**Network Diagram**
+
+![Network Diagram](./assets/diagram-network.svg)
 
 
 ### Raspberry-Pi Setup
@@ -507,10 +508,6 @@ SUCCESS!
 
 --->
 
-### Internet Connectivity
-
-???
-
 
 ## _Telegram_ Bot Integration
 
@@ -527,6 +524,8 @@ _Telegram_ Bot API [Documentation](https://core.telegram.org/bots/api)
 
 ### Bot Description
 
+TODO
+<!---Change to match real usage 
 This bot is used to send and receive messages to and from a small (proof-of-concept) IoT device. These messages can be 
 used to control the device running on RIOT-OS. See "Commands" for a list of all available controls.
 
@@ -549,6 +548,26 @@ led <1-4> <1-4> ... toggle
 
 You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> \<1-4>).
 Inferentially the maximum number of target LEDs for the commands above is 4.
+--->
+
+
+## Docker Alternative
+
+It is possible to run the application in a docker container. This is limited to the `BOARD=native` environment, which 
+requires mocking of sensor data. This will hide possible issues with e.g. reading real sensor data or getting sensor 
+information.
+
+Make sure the docker daemon is running.
+
+To build the image simply use the [Dockerfile](./Dockerfile):
+```shell
+docker build -t riot-app .
+```
+
+Then you can run the container:
+```shell
+docker run -it riot-app
+```
 
 
 ## TODOs

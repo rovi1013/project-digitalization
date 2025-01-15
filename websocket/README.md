@@ -25,6 +25,7 @@ And copy the telegram bot token into it like this:
 TELEGRAM_BOT_TOKEN=<actual_telegram_bot_token>
 ```
 
+
 ## Usage
 
 Run the application using uvicorn:

@@ -18,7 +18,7 @@ cd project-digitalization
 
 Build the application (this includes RIOT-OS) and open a terminal to the board:
 ```shell
-make all clean build term
+make all clean flash term
 ```
 
 ### Shell Commands
@@ -91,8 +91,6 @@ Then you can run the container:
 ```shell
 docker run -it riot-app
 ```
-
- 
 
 
 ## Project Structure
@@ -218,19 +216,32 @@ Convert a timestamp (&micro;s) into the format hh:mm:ss.
 An overview of the different tools and analysis performed on this application in order to provide the best result 
 possible and avoid common mistakes and causes for errors. 
 
-### Tool _valgrind_
+### Tool valgrind
 
 This tool allows to analyse the application, especially the ability to discover memory related issues. Only works for 
 x86, x86_64 and ARM architectures in environments supporting virtual memory, this unfortunately also means we can only 
 check our application build with `BOARD=native`.
 
-Run _valgrind_:
+Run valgrind:
 ```shell
 valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
 --show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
 ```
 
 Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
+
+### Tool dive
+
+This tool allows to analyse docker image layers.
+
+Run `dive`:
+```shell
+docker run --rm -it \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wagoodman/dive:latest riot-app:latest
+```
+
+Dive [Documentation](https://github.com/wagoodman/dive).
 
 
 ## RIOT-OS Modules

@@ -15,17 +15,30 @@
 // Write a value to an LED
 static int led_saul_write(const uint8_t led_id, const int16_t value) {
     saul_reg_t *dev = saul_reg_find_nth(led_id);
+
+#ifdef BOARD_NATIVE
+    (void) dev;
+    if (value == 0 || value == 255) {
+        printf("LED %u set to %s\n", led_id, value == 0 ? "off" : "on");
+    } else {
+        printf("LED %u set to %d\n", led_id, value);
+    }
+#else
+
     if (!dev) {
         printf("LED with ID %u not found\n", led_id);
         return ERROR_NO_SENSOR;
     }
 
+    // Use phydat_t struct {val[], scale, unit} to write to a SAUL device
     const phydat_t data = { .val = { value, 0, 0 }, .scale = 0, .unit = UNIT_UNDEF };
 
     if (saul_reg_write(dev, &data) < 0) {
         printf("Failed to write to LED with ID %u\n", led_id);
         return ERROR_LED_WRITE;
     }
+
+#endif
 
     return 0;
 }

@@ -8,3 +8,4 @@
 bin
 /cmake-build-debug/
 /websocket/.env
+/websocket/coap_request.py

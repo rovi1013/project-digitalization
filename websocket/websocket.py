@@ -3,6 +3,7 @@ from fastapi import FastAPI, WebSocket, Request
 from dotenv import load_dotenv
 import httpx
 import os
+import argparse
 
 import asyncio
 from aiocoap import Context, Message, POST, resource
@@ -106,24 +107,26 @@ class CoAPResource(resource.Resource):
             return Message(code=500, payload=f"Error: {str(e)}".encode("utf-8"))
 
 
-async def coap_server():
+async def coap_server(server_url):
+    BLUE = '\033[34m'
+    RESET = '\033[0m'
     # Create CoAP context and add the resource
     root = resource.Site()
     root.add_resource(('.well-known/core',), resource.WKCResource(root.get_resources_as_linkheader))
     root.add_resource(('message',), CoAPResource())
 
-    await Context.create_server_context(root, bind=("127.0.0.1", 5683))
-    print("CoAP server running on coap://127.0.0.1:5683")
+    await Context.create_server_context(root, bind=(server_url, 5683))
+    print(f"{BLUE}INFO{RESET}:\t  CoAP server running on coap://{server_url}:5683")
     await asyncio.sleep(3600)  # Server runs for 1 hour
 
 
 # Funktion zum Starten beider Server
-async def start_servers():
+async def start_servers(server_url):
     # CoAP-Server in separatem Task starten
-    coap_task = asyncio.create_task(coap_server())
+    coap_task = asyncio.create_task(coap_server(server_url))
 
     # Uvicorn für FastAPI starten
-    uvicorn_config = uvicorn.Config(app, host="127.0.0.1", port=8000)
+    uvicorn_config = uvicorn.Config(app, host=server_url, port=8000)
     uvicorn_server = uvicorn.Server(uvicorn_config)
     fastapi_task = asyncio.create_task(uvicorn_server.serve())
 
@@ -133,5 +136,10 @@ async def start_servers():
 
 # FastAPI und CoAP-Server starten
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Start the websocket.")
+    parser.add_argument("-u", "--url", metavar='', type=str, default="127.0.0.1",
+                        help="Local IP address where the uvicorn server is started (default: 127.0.0.1)")
+    args = parser.parse_args()
+    uvicorn_url = args.url
     load_dotenv(".env")  # Laden der .env-Datei für das Telegram-Token
-    asyncio.run(start_servers())
+    asyncio.run(start_servers(uvicorn_url))

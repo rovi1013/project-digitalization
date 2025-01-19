@@ -86,6 +86,8 @@ class CoAPResource(resource.Resource):
             chat_id = data.get("chat_id")
             text = data.get("text")
 
+            print(f"Received Message ID (mid): {request.mid}")
+
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
 

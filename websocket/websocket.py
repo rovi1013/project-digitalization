@@ -79,52 +79,34 @@ class CoAPResource(resource.Resource):
 
     async def render_post(self, request: Message):
         try:
-            # Decode and parse the payload
+            # Parse the payload
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
             chat_id = data.get("chat_id")
             text = data.get("text")
 
-            # Log the message ID (mid) for debugging
             print(f"Received Message ID (mid): {request.mid}")
-
-            # Validate the Message ID and code ranges
-            if not (0 <= request.mid <= 65535):
-                print("Invalid Message ID detected, returning error.")
-                return Message(code=400, payload=b"Invalid Message ID")
-            if not (0 <= request.code <= 255):
-                print("Invalid Message Code detected, returning error.")
-                return Message(code=400, payload=b"Invalid Message Code")
 
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
 
+            # Loggen der `mid`, um den Wert zu sehen
+            print(f"Message ID (mid): {request.mid}")
+
             # Send the message to Telegram
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    telegram_api_url,
+                    f"{telegram_api_url}/sendMessage",
                     json={"chat_id": chat_id, "text": text},
                 )
 
             if response.status_code == 200:
-                # Ensure a valid Message ID for the response
-                response_message = Message(code=205, payload=b"Message sent successfully")
-                response_message.mid = request.mid  # Echo the valid mid
-                return response_message
+                return Message(code=200, payload=b"Message sent successfully")
             else:
-                return Message(
-                    code=500,
-                    payload=f"Telegram API error: {response.text}".encode("utf-8"),
-                )
-
+                return Message(code=500, payload=f"Telegram API error: {response.text}".encode("utf-8"))
         except Exception as e:
-            return Message(
-                code=500,
-                payload=f"Error processing the request: {str(e)}".encode("utf-8"),
-            )
-
-
+            return Message(code=500, payload=f"Error: {str(e)}".encode("utf-8"))
 
 
 async def coap_server(server_url):

@@ -8,6 +8,8 @@ import argparse
 import asyncio
 from aiocoap import Context, Message, POST, resource
 
+import logging
+
 app = FastAPI()
 
 # Get Token from .env file
@@ -87,7 +89,7 @@ class CoAPResource(resource.Resource):
             text = data.get("text")
 
             print(f"Received Message ID (mid): {request.mid}")
-            print(f"Received Message Code: {request.code}")
+            print(f"Received Method Code: {request.code.name}")
 
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
@@ -133,6 +135,8 @@ async def start_servers(server_url):
     # Beide Server gleichzeitig laufen lassen
     await asyncio.gather(coap_task, fastapi_task)
 
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 # FastAPI und CoAP-Server starten
 if __name__ == "__main__":

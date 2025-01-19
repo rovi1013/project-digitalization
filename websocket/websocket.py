@@ -87,12 +87,10 @@ class CoAPResource(resource.Resource):
             text = data.get("text")
 
             print(f"Received Message ID (mid): {request.mid}")
+            print(f"Received Message Code: {request.code}")
 
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
-
-            # Loggen der `mid`, um den Wert zu sehen
-            print(f"Message ID (mid): {request.mid}")
 
             # Send the message to Telegram
             async with httpx.AsyncClient() as client:

@@ -6,7 +6,7 @@ async def main():
     uri = "coap://192.168.0.213:5683/message"
 
     # The payload as a byte string
-    payload = b"chat_id=7779371199&text=123456789 T E S T"
+    payload = b"chat_id=7779371199&text=TEST von 17:04"
 
     # Create a CoAP message
     request = Message(code=POST, uri=uri, payload=payload)

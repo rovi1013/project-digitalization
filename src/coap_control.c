@@ -210,12 +210,12 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
     }
     remote = &new_remote;
 
-    printf("Konvertierte Serveradresse: %d", remote->addr.ipv6[0]);
-    printf("Konvertierter Port: %d", remote->port);
+    printf("Konvertierte Serveradresse: %d\n", remote->addr.ipv6[0]);
+    printf("Konvertierter Port: %d\n", remote->port);
 
     bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
 
-    printf("Gesendete Bytes: %zd", bytes_sent);
+    printf("Gesendete Bytes: %d\n", bytes_sent);
 
     if (bytes_sent > 0) {
         req_count++;

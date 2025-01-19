@@ -16,28 +16,10 @@
 #include "net/utils.h"
 #include "fmt.h"
 
-//static sock_udp_ep_t _proxy_remote;
+static bool _proxied = false;
 static char proxy_uri[64];
 #define _LAST_REQ_PATH_MAX (64)
 static char _last_req_path[_LAST_REQ_PATH_MAX];
-uint16_t req_count = 0;
-static sock_udp_ep_t _proxy_remote;
-static char _proxy_uri[CONFIG_URI_MAX];
-
-/* Retain request URI to re-request if response includes block. User must not
- * start a new request (with a new path) until any blockwise transfer
- * completes or times out. */
-static char _last_req_uri[CONFIG_URI_MAX];
-
-/* Last remote endpoint where an Observe request has been sent to */
-static sock_udp_ep_t obs_remote;
-
-/* the token used for observing a remote resource */
-static uint8_t obs_req_token[GCOAP_TOKENLEN_MAX];
-
-/* actual length of above token */
-static size_t obs_req_tkl = 0;
-
 uint16_t req_count = 0;
 
 
@@ -46,127 +28,18 @@ void coap_control_init(void) {
     puts("Initializing coap control");
 }
 
+/*  */
 int _print_usage(char **argv) {
     printf("Usage: %s [get|post]\n", argv[0]);
     return 1;
 }
 
-/* Coap Control */
-int coap_control(int argc, char **argv) {
-    char *method_codes[] = {"ping", "get", "post", "put"};
-    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
-    coap_pkt_t pdu;
-    size_t len;
-
-    sock_udp_ep_t remote;
-
-
-    int code_pos = -1;
-    for (size_t i = 0; i < ARRAY_SIZE(method_codes); i++) {
-        if (strcmp(argv[1], method_codes[i]) == 0) {
-            code_pos = i;
-        }
-    }
-    if (code_pos == -1) {
-        return _print_usage(argv);
-    }
-
-    /* parse options */
-    int apos = 2;
-    /* ping must be confirmable */
-    unsigned msg_type = (!code_pos ? COAP_TYPE_CON : COAP_TYPE_NON);
-    if (argc > apos && strcmp(argv[apos], "-c") == 0) {
-        msg_type = COAP_TYPE_CON;
-        apos++;
-    }
-
-    if (((argc == apos + 2) && (code_pos == 0)) ||      /* ping */
-        ((argc == apos + 3) && (code_pos == 1)) ||      /* get */
-        ((argc == apos + 3 ||
-            argc == apos + 4) && (code_pos > 1))) {     /* post or put */
-
-        char *uri = NULL;
-        int uri_len = 0;
-        if (code_pos) {
-            uri = argv[apos+2];
-            uri_len = strlen(argv[apos+2]);
-        }
-
-        gcoap_req_init(&pdu, &buf[0], CONFIG_GCOAP_PDU_BUF_SIZE, code_pos, uri);
-        coap_hdr_set_type(pdu.hdr, msg_type);
-
-        /* Preperation of the Payload */
-        memset(_last_req_path, 0, _LAST_REQ_PATH_MAX);
-        if (uri_len < _LAST_REQ_PATH_MAX) {
-            memcpy(_last_req_path, uri, uri_len);
-        }
-
-        size_t paylen = (argc == apos + 4) ? strlen(argv[apos+ 3 ]) : 0;
-        if (paylen) {
-            coap_opt_add_format(%pdu, COAP_FORMAT_TEXT);
-            len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
-            if (pdu.payload_len >= paylen) {
-                memcpy(pdu.payload, argv[apos+3], paylen);
-                len += paylen;
-            }
-            else {
-                puts("gcoap_cli: msg buffer too small");
-                return 1;
-            }
-        }
-        else {
-            len = coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);
-        }
-
-        /* Sending the message */
-        printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);
-        if (!_send(&buf[0], len, argv[apos], argv[apos+1])) {
-            puts("gcoap_cli: msg send failed");
-        }
-
-    }
-}
-
-/* Sending the message */
-size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str) {
-    size_t bytes_sent;
-    sock_udp_ep_t *remote;
-    sock_udp_ep_t new_remote;
-
-    if (_parse_endpoint(&new_remote, addr_str, port_str)) {
-        return 0;
-    }
-    remote = &new_remote;
-
-    bytes_sent = gcoap_req_send(buf, len, remote, _resp_handler, NULL);
-    if (bytes_sent > 0) {
-        req_count++;
-    }
-    return bytes_sent;
-}
-
-/* Parsing the endpoint */
-bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *port_str) {
-    /* Check for IPv4-Address */
-    if (netutils_get_ipv4((ipv4_addr_t *)&remote->addr, addr_str) < 0) {
-        puts("gcoap_cli: unable to parse IPv4 address");
-        return false;
-    }
-    remote->netif = SOCK_ADDR_ANY_NETIF;
-    remote->family = AF_INET;
-
-    /* Parse port */
-    remote->port = atoi(port_str);
-    if (remote->port == 0) {
-        puts("gcoap_clie: unable to parse port");
-        return false;
-    }
-
-    return true;
-}
-
-/* Response handler */
-void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu, const sock_udp_ep_t *remote) {
+/*
+ * Response callback.
+ */
+static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
+                          const sock_udp_ep_t *remote)
+{
     (void)remote;       /* not interested in the source currently */
 
     if (memo->state == GCOAP_MEMO_TIMEOUT) {
@@ -218,19 +91,18 @@ void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu, const sock
     if (coap_get_block2(pdu, &block)) {
         if (block.more) {
             unsigned msg_type = coap_get_type(pdu);
-            if (block.blknum == 0 && !strlen(_last_req_uri)) {
+            if (block.blknum == 0 && !strlen(_last_req_path)) {
                 puts("Path too long; can't complete blockwise");
                 return;
             }
-            uri_parser_result_t urip;
-            uri_parser_process(&urip, _last_req_uri, strlen(_last_req_uri));
-            if (*_proxy_uri) {
+
+            if (_proxied) {
                 gcoap_req_init(pdu, (uint8_t *)pdu->hdr, CONFIG_GCOAP_PDU_BUF_SIZE,
                                COAP_METHOD_GET, NULL);
             }
             else {
                 gcoap_req_init(pdu, (uint8_t *)pdu->hdr, CONFIG_GCOAP_PDU_BUF_SIZE,
-                               COAP_METHOD_GET, urip.path);
+                               COAP_METHOD_GET, _last_req_path);
             }
 
             if (msg_type == COAP_TYPE_ACK) {
@@ -239,16 +111,128 @@ void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu, const sock
             block.blknum++;
             coap_opt_add_block2_control(pdu, &block);
 
-            if (*_proxy_uri) {
-                coap_opt_add_proxy_uri(pdu, urip.scheme);
+            if (_proxied) {
+                coap_opt_add_proxy_uri(pdu, _last_req_path);
             }
 
             int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
-            gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
-            _send((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
+            gcoap_req_send((uint8_t *)pdu->hdr, len, remote,
+                           _resp_handler, memo->context);
         }
         else {
             puts("--- blockwise complete ---");
         }
+    }
+}
+
+/* Parsing the endpoint */
+bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *port_str) {
+    /* Check for IPv4-Address */
+    if (netutils_get_ipv4((ipv4_addr_t *)&remote->addr, addr_str) < 0) {
+        puts("gcoap_cli: unable to parse IPv4 address");
+        return false;
+    }
+    remote->netif = SOCK_ADDR_ANY_NETIF;
+    remote->family = AF_INET;
+
+    /* Parse port */
+    remote->port = atoi(port_str);
+    if (remote->port == 0) {
+        puts("gcoap_clie: unable to parse port");
+        return false;
+    }
+
+    return true;
+}
+
+/* Sending the message */
+size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str) {
+    size_t bytes_sent;
+    sock_udp_ep_t *remote;
+    sock_udp_ep_t new_remote;
+
+    if (_parse_endpoint(&new_remote, addr_str, port_str)) {
+        return 0;
+    }
+    remote = &new_remote;
+
+    bytes_sent = gcoap_req_send(buf, len, remote, _resp_handler, NULL);
+    if (bytes_sent > 0) {
+        req_count++;
+    }
+    return bytes_sent;
+}
+
+/* Coap Control */
+int coap_control(int argc, char **argv) {
+    char *method_codes[] = {"ping", "get", "post", "put"};
+    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
+    coap_pkt_t pdu;
+    size_t len;
+
+
+    int code_pos = -1;
+    for (size_t i = 0; i < ARRAY_SIZE(method_codes); i++) {
+        if (strcmp(argv[1], method_codes[i]) == 0) {
+            code_pos = i;
+        }
+    }
+    if (code_pos == -1) {
+        return _print_usage(argv);
+    }
+
+    /* parse options */
+    int apos = 2;
+    /* ping must be confirmable */
+    unsigned msg_type = (!code_pos ? COAP_TYPE_CON : COAP_TYPE_NON);
+    if (argc > apos && strcmp(argv[apos], "-c") == 0) {
+        msg_type = COAP_TYPE_CON;
+        apos++;
+    }
+
+    if (((argc == apos + 2) && (code_pos == 0)) ||      /* ping */
+        ((argc == apos + 3) && (code_pos == 1)) ||      /* get */
+        ((argc == apos + 3 ||
+            argc == apos + 4) && (code_pos > 1))) {     /* post or put */
+
+        char *uri = NULL;
+        int uri_len = 0;
+        if (code_pos) {
+            uri = argv[apos+2];
+            uri_len = strlen(argv[apos+2]);
+        }
+
+        gcoap_req_init(&pdu, &buf[0], CONFIG_GCOAP_PDU_BUF_SIZE, code_pos, uri);
+        coap_hdr_set_type(pdu.hdr, msg_type);
+
+        /* Preperation of the Payload */
+        memset(_last_req_path, 0, _LAST_REQ_PATH_MAX);
+        if (uri_len < _LAST_REQ_PATH_MAX) {
+            memcpy(_last_req_path, uri, uri_len);
+        }
+
+        size_t paylen = (argc == apos + 4) ? strlen(argv[apos+3]) : 0;
+        if (paylen) {
+            coap_opt_add_format(%pdu, COAP_FORMAT_TEXT);
+            len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
+            if (pdu.payload_len >= paylen) {
+                memcpy(pdu.payload, argv[apos+3], paylen);
+                len += paylen;
+            }
+            else {
+                puts("gcoap_cli: msg buffer too small");
+                return 1;
+            }
+        }
+        else {
+            len = coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);
+        }
+
+        /* Sending the message */
+        printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);
+        if (!_send(&buf[0], len, argv[apos], argv[apos+1])) {
+            puts("gcoap_cli: msg send failed");
+        }
+
     }
 }

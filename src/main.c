@@ -7,6 +7,7 @@
 #include "led_control.h"
 #include "cpu_temperature.h"
 #include "cmd_control.h"
+#include "coap_control.h"
 
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
@@ -15,6 +16,7 @@ int main(void) {
     // Initialize devices
     led_control_init();
     cpu_temperature_init();
+    coap_control_init();
 
     // Initialize default networking
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);

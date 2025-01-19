@@ -39,10 +39,21 @@ static int cpu_temp_control(const int argc, char **argv) {
     return 0;
 }
 
+static int coap_test_control(const int argc, char **argv) {
+    if (argc != 2) {
+        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        puts("Usage: coap <message>");
+        return ERROR_INVALID_ARGS;
+    }
+
+    return 0;
+}
+
 // Shell commands array
 static const shell_command_t cmd_control_shell_commands[] = {
     { "led", "Control LEDs (e.g., 'led 0 on')", led_control },
     { "cpu-temp", "Get CPU temperature (e.g., 'cpu-temp')", cpu_temp_control },
+    {  "coap-test", "Send a custom message to coap://127.0.0.2:5683", coap_test_control },
     { NULL, NULL, NULL } // End marker
 };
 

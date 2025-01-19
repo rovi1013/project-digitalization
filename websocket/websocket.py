@@ -86,6 +86,10 @@ class CoAPResource(resource.Resource):
             chat_id = data.get("chat_id")
             text = data.get("text")
 
+            if not (0 <= request.mid <= 65535):  # Valid range for 16-bit unsigned int
+                print("Invalid Message ID detected, returning error.")
+                return Message(code=400, payload=b"Invalid Message ID")
+
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
 

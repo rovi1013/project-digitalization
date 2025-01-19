@@ -54,8 +54,8 @@ static gcoap_socket_type_t _get_tl(const char *uri)
     return GCOAP_SOCKET_TYPE_UNDEF;
 }
 
-static ssize_t _send(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
-                     void *ctx, gcoap_socket_type_t tl);
+//static ssize_t _send(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
+                     //void *ctx, gcoap_socket_type_t tl);
 
 
 
@@ -152,9 +152,9 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
                 coap_opt_add_proxy_uri(pdu, urip.scheme);
             }
 
-            int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
-            gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
-            _send((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
+            //int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
+            //gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
+            //_send((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
         }
         else {
             puts("--- blockwise complete ---");
@@ -183,7 +183,7 @@ bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *por
 }
 
 /* Sending the message */
-size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str) {
+size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx, gcoap_socket_type_t tl) {
     size_t bytes_sent;
     sock_udp_ep_t *remote;
     sock_udp_ep_t new_remote;
@@ -193,12 +193,14 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str) {
     }
     remote = &new_remote;
 
-    bytes_sent = gcoap_req_send(buf, len, remote, _resp_handler, NULL);
+    bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
     if (bytes_sent > 0) {
         req_count++;
     }
     return bytes_sent;
 }
+
+
 
 /* Coap Control */
 int coap_control(int argc, char **argv) {
@@ -250,7 +252,7 @@ int coap_control(int argc, char **argv) {
 
         size_t paylen = (argc == apos + 4) ? strlen(argv[apos+3]) : 0;
         if (paylen) {
-            coap_opt_add_format(%pdu, COAP_FORMAT_TEXT);
+            coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);
             len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
             if (pdu.payload_len >= paylen) {
                 memcpy(pdu.payload, argv[apos+3], paylen);
@@ -265,9 +267,11 @@ int coap_control(int argc, char **argv) {
             len = coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);
         }
 
+        gcoap_socket_type_t tl = _get_tl(_last_req_uri);
+
         /* Sending the message */
         printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);
-        if (!_send(&buf[0], len, argv[apos], argv[apos+1])) {
+        if (!_send(&buf[0], len, argv[apos], argv[apos+1], NULL, tl)) {
             puts("gcoap_cli: msg send failed");
         }
 

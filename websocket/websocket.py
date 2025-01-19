@@ -102,9 +102,10 @@ class CoAPResource(resource.Resource):
                 )
 
             if response.status_code == 200:
-                return Message(code=200, payload=b"Message sent successfully")
+                return Message(code=205, payload=b"Message sent successfully")
             else:
-                return Message(code=500, payload=f"Telegram API error: {response.text}".encode("utf-8"))
+                return Message(code=502, payload=f"Telegram API error: {response.text}".encode("utf-8"))
+
         except Exception as e:
             return Message(code=500, payload=f"Error: {str(e)}".encode("utf-8"))
 

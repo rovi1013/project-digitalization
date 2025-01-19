@@ -47,12 +47,12 @@ static int coap_test_control(const int argc, char **argv) {
         return ERROR_INVALID_ARGS;
     }
 
-    char type = "post";
-    char addr = "127.0.0.2";
-    char port = "5683";
-    char path = "/message";
-    char data = "CoAP-Test123";
-    char *argvNew[] = {"gcoap_cli_cmd", type, addr, port, path, data};
+    char *type = "post";
+    char *addr = "127.0.0.2";
+    char *port = "5683";
+    char *path = "/message";
+    char *data = "CoAP-Test123";
+    char *argvNew[] = {argv[0], type, addr, port, path, data};
     int argcNew = 6;
 
     coap_control(argcNew, argvNew);

@@ -16,11 +16,47 @@
 #include "net/utils.h"
 #include "fmt.h"
 
-static bool _proxied = false;
-static char proxy_uri[64];
+//static bool _proxied = false;
+//static char proxy_uri[64];
 #define _LAST_REQ_PATH_MAX (64)
 static char _last_req_path[_LAST_REQ_PATH_MAX];
 uint16_t req_count = 0;
+
+#ifndef CONFIG_URI_MAX
+#define CONFIG_URI_MAX      128
+#endif
+
+//static sock_udp_ep_t _proxy_remote;
+static char _proxy_uri[CONFIG_URI_MAX];
+
+/* Retain request URI to re-request if response includes block. User must not
+ * start a new request (with a new path) until any blockwise transfer
+ * completes or times out. */
+static char _last_req_uri[CONFIG_URI_MAX];
+
+/* Last remote endpoint where an Observe request has been sent to */
+//static sock_udp_ep_t obs_remote;
+
+/* the token used for observing a remote resource */
+//static uint8_t obs_req_token[GCOAP_TOKENLEN_MAX];
+
+/* actual length of above token */
+//static size_t obs_req_tkl = 0;
+
+static gcoap_socket_type_t _get_tl(const char *uri)
+{
+    if (!strncmp(uri, "coaps", 5)) {
+        return GCOAP_SOCKET_TYPE_DTLS;
+    }
+    else if (!strncmp(uri, "coap", 4)) {
+        return GCOAP_SOCKET_TYPE_UDP;
+    }
+    return GCOAP_SOCKET_TYPE_UNDEF;
+}
+
+static ssize_t _send(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
+                     void *ctx, gcoap_socket_type_t tl);
+
 
 
 // Initialize CoAP Control
@@ -91,18 +127,19 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
     if (coap_get_block2(pdu, &block)) {
         if (block.more) {
             unsigned msg_type = coap_get_type(pdu);
-            if (block.blknum == 0 && !strlen(_last_req_path)) {
+            if (block.blknum == 0 && !strlen(_last_req_uri)) {
                 puts("Path too long; can't complete blockwise");
                 return;
             }
-
-            if (_proxied) {
+            uri_parser_result_t urip;
+            uri_parser_process(&urip, _last_req_uri, strlen(_last_req_uri));
+            if (*_proxy_uri) {
                 gcoap_req_init(pdu, (uint8_t *)pdu->hdr, CONFIG_GCOAP_PDU_BUF_SIZE,
                                COAP_METHOD_GET, NULL);
             }
             else {
                 gcoap_req_init(pdu, (uint8_t *)pdu->hdr, CONFIG_GCOAP_PDU_BUF_SIZE,
-                               COAP_METHOD_GET, _last_req_path);
+                               COAP_METHOD_GET, urip.path);
             }
 
             if (msg_type == COAP_TYPE_ACK) {
@@ -111,13 +148,13 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
             block.blknum++;
             coap_opt_add_block2_control(pdu, &block);
 
-            if (_proxied) {
-                coap_opt_add_proxy_uri(pdu, _last_req_path);
+            if (*_proxy_uri) {
+                coap_opt_add_proxy_uri(pdu, urip.scheme);
             }
 
             int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
-            gcoap_req_send((uint8_t *)pdu->hdr, len, remote,
-                           _resp_handler, memo->context);
+            gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
+            _send((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
         }
         else {
             puts("--- blockwise complete ---");
@@ -235,4 +272,5 @@ int coap_control(int argc, char **argv) {
         }
 
     }
+    return 0;
 }

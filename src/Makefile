@@ -34,6 +34,8 @@ endif
 ########################################
 ################ ADJUST ################
 ########################################
+
+############## NETWORKING ##############
 # RIOT networking modules
 USEMODULE += netdev_default
 USEMODULE += auto_init_gnrc_netif
@@ -61,6 +63,13 @@ USEMODULE += netstats_rpl
 USEMODULE += sock_dns              # include DNS client
 USEMODULE += gnrc_ipv6_nib_dns     # include RDNSS option handling
 USEMODULE += auto_init_sock_dns
+
+################# COAP #################
+USEMODULE += gcoap
+USEMODULE += netutils
+USEMODULE += uri_parser
+USEMODULE += ipv4_addr
+
 ########################################
 ################ ADJUST ################
 ########################################
@@ -77,6 +86,7 @@ SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
 SRC += cpu_temperature.c
+SRC += coap_control.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

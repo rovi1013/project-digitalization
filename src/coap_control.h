@@ -7,6 +7,7 @@
 #include <net/gcoap.h>
 #include "net/sock/udp.h"
 
+void coap_control_init(void);
 int coap_control(int argc, char **argv);
 
 

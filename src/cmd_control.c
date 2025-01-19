@@ -48,7 +48,7 @@ static int coap_test_control(const int argc, char **argv) {
     }
 
     char *type = "post";
-    char *addr = "127.0.0.2";
+    char *addr = "192.168.0.213";
     char *port = "5683";
     char *path = "/message";
     char *data = "CoAP-Test123";

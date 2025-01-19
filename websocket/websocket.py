@@ -86,9 +86,16 @@ class CoAPResource(resource.Resource):
             chat_id = data.get("chat_id")
             text = data.get("text")
 
-            if not (0 <= request.mid <= 65535):  # Valid range for 16-bit unsigned int
+            # Log the message ID (mid) for debugging
+            print(f"Received Message ID (mid): {request.mid}")
+
+            # Validate the Message ID and code ranges
+            if not (0 <= request.mid <= 65535):
                 print("Invalid Message ID detected, returning error.")
                 return Message(code=400, payload=b"Invalid Message ID")
+            if not (0 <= request.code <= 255):
+                print("Invalid Message Code detected, returning error.")
+                return Message(code=400, payload=b"Invalid Message Code")
 
             if not chat_id or not text:
                 return Message(code=400, payload=b"Missing chat_id or text")
@@ -101,7 +108,10 @@ class CoAPResource(resource.Resource):
                 )
 
             if response.status_code == 200:
-                return Message(code=205, payload=b"Message sent successfully")
+                # Ensure a valid Message ID for the response
+                response_message = Message(code=205, payload=b"Message sent successfully")
+                response_message.mid = request.mid  # Echo the valid mid
+                return response_message
             else:
                 return Message(
                     code=500,
@@ -113,6 +123,8 @@ class CoAPResource(resource.Resource):
                 code=500,
                 payload=f"Error processing the request: {str(e)}".encode("utf-8"),
             )
+
+
 
 
 async def coap_server(server_url):

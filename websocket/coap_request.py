@@ -10,7 +10,6 @@ async def main():
 
     # Create a CoAP message
     request = Message(code=POST, uri=uri, payload=payload)
-    request.mid = 123
 
     # Create a CoAP client context
     protocol = await Context.create_client_context()

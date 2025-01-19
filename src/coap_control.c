@@ -189,12 +189,14 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
     sock_udp_ep_t new_remote;
 
     if (_parse_endpoint(&new_remote, addr_str, port_str)) {
+        puts("Parsing ist fehlgeschlagen");
         return 0;
     }
     remote = &new_remote;
 
     bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
     if (bytes_sent > 0) {
+        puts("Senden ist fehlgeschlagen");
         req_count++;
     }
     return bytes_sent;

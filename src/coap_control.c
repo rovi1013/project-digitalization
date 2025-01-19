@@ -188,7 +188,7 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
     sock_udp_ep_t *remote;
     sock_udp_ep_t new_remote;
 
-    if (_parse_endpoint(&new_remote, addr_str, port_str)) {
+    if (!_parse_endpoint(&new_remote, addr_str, port_str)) {
         puts("Parsing ist fehlgeschlagen");
         return 0;
     }

@@ -115,23 +115,27 @@ make info-modules
 
 ```shell
 project/digitalization
+├── README.md                     # Documentation
 ├── Makefile                      # Wrapper Makefile
-├── .env                          # Secrets storage file
 ├── src/
+│   ├── README.md                 # Application classes Documentation
 │   ├── Makefile                  # Main Makefile
 │   ├── main.c                    # Main application file
-│   ├── led_control               # LED control
 │   ├── cmd_control               # Shell control
-│   ├── further classes           # ...
+│   ├── cpu_temperature           # CPU temperature
+│   ├── led_control               # LED control
 │   └── utils/
 │       ├── Makefile              # Custom module utils
 │       ├── timestamp_convert     # Convert timestamps to hh:mm:ss
 │       └── error_handler         # Handler error messaging
 ├── websocket/
+│   ├── README.md                 # Websocket Documentation
 │   ├── websocket.py              # Main Websocket file
-│   └── further files             # ...
-├── CMakeLists.txt                # CMake project file
-└── README.md                     # Documentation
+│   ├── requirements.txt          # Python requirements
+│   └── .env                      # Secrets storage file
+├── Dockerfile                    # Alternative version with Docker
+└── CMakeLists.txt                # CMake project file
+
 
 ```
 

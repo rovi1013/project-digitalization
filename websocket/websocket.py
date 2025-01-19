@@ -1,15 +1,16 @@
-import uvicorn
-from fastapi import FastAPI, WebSocket, Request
-from dotenv import load_dotenv
-import httpx
-import os
 import argparse
-
 import asyncio
-import aiocoap.resource as resource
-import aiocoap
-from aiocoap.numbers.codes import Code
 import logging
+import os
+
+import aiocoap
+import aiocoap.resource as resource
+from aiocoap.numbers.codes import Code
+import httpx
+from dotenv import load_dotenv
+from fastapi import FastAPI, WebSocket, Request
+import uvicorn
+
 
 app = FastAPI()
 
@@ -88,7 +89,7 @@ class CoAPResource(resource.Resource):
 
             chat_id = data.get("chat_id")
             text = data.get("text")
-            print(f"text: {text} and id: {chat_id}")
+            print(f"Text: '{text}' and id: '{chat_id}'")
 
             if not chat_id or not text:
                 return aiocoap.Message(
@@ -150,8 +151,8 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 # FastAPI und CoAP-Server starten
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the websocket.")
-    parser.add_argument("-u", "--url", metavar='', type=str, default="127.0.0.1",
-                        help="Local IP address where the uvicorn server is started (default: 127.0.0.1)")
+    parser.add_argument("-u", "--url", metavar='', type=str, default="0.0.0.0",
+                        help="Local IP address where the uvicorn server is started (default: 0.0.0.0)")
     args = parser.parse_args()
     uvicorn_url = args.url
     load_dotenv(".env")  # Laden der .env-Datei für das Telegram-Token

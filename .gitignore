@@ -1,8 +1,8 @@
 .vscode
 .idea
 .temp
-.venv
-
+*venv
+*__pycache__
 *.draft
 
 bin

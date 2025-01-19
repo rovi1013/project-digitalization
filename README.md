@@ -46,8 +46,9 @@ sudo ip tuntap add dev tap0 mode tap user $(whoami)
 sudo ip link set tap0 up
 ```
 
-Additionally, for communication with the telegram bot the nRF52840-DK board requires an internet connection. This connection is 
-established by following the steps described in [Border Router Setup](#border-router-setup).
+#### BORDER ROUTER SETUP (REQUIRED)
+For communication with the telegram bot the nRF52840-DK board requires an internet connection. This 
+connection is established by following the steps described in [Border Router Setup](#border-router-setup).
 
 
 ## Usage
@@ -124,6 +125,7 @@ project/digitalization
 │   ├── cmd_control               # Shell control
 │   ├── cpu_temperature           # CPU temperature
 │   ├── led_control               # LED control
+│   ├── coap_control              # COAP client
 │   └── utils/
 │       ├── Makefile              # Custom module utils
 │       ├── timestamp_convert     # Convert timestamps to hh:mm:ss
@@ -135,8 +137,6 @@ project/digitalization
 │   └── .env                      # Secrets storage file
 ├── Dockerfile                    # Alternative version with Docker
 └── CMakeLists.txt                # CMake project file
-
-
 ```
 
 ## Main Application
@@ -286,8 +286,8 @@ this we are using a raspberry-pi and the nRF52840-Dongle. These two together can
 The first thing to do is to set up the raspberry-pi and the nRF52840-Dongle. After this is done you can connect the
 nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity. 
 
-1. Set up raspberry-pi and nRF52840-Dongle
-2. Connect nRF52840-DK board and nRF52840-Dongle
+1. Set up raspberry-pi and nRF52840-Dongle (once)
+2. Connect nRF52840-DK board and nRF52840-Dongle (every time)
 3. AUTOMATICALLY: Establish internet connectivity
 
 **Network Diagram**
@@ -295,10 +295,43 @@ nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity.
 ![Network Diagram](./assets/diagram-network.svg)
 
 
-### Raspberry-Pi Setup
+### Raspberry-Pi / nRF52840-Dongle Setup
+
+This setup has to be run once (and only once) in order to prepare the border router functionality.
+
+1. Plug the nRF52840-Dongle into any USB port of the Raspberry-Pi.
+2. Connect the Raspberry-Pi to your local network (here via ethernet) and power. The rest of this setup assumes an 
+ethernet connection.
+3. Locate the Raspberry-Pi's IP address in your local network (you can use any tool, here we use arp-scan):
+```shell
+# Get your ethernet interface name with ifconfig
+ifconfig
+# Outputs all the interfaces with their configuration
+# Ethernet interfaces will usually start with "en"
+<interface1-name>: ...
+<interface2-name>: ...
+eno1:
+# Scan the ethernet interface (here: eno1) locally with -l
+sudo arp-scan -I <ethernet-interface-name> -l
+# Outputs a list off all devices
+<ip-address> <mac-address> <vendor-name>
+192.168.0.213 d8:3a:dd:2b:61:79 Raspberry Pi Trading Ltd
+```
+4. Connect to the Raspberry-Pi via ssh with username "riot" and enter correct password:
+```shell
+ssh riot@192.168.0.213
+```
+5. If you are in the correct place your console should look like this:
+```shell
+riot@6lbr-3:~ $
+```
+6. Get the border router setup from RIOT:
+```shell
+git clone https://github.com/AllRIOT/RIOT.git AllRIOT
+```
+7. Now the Raspberry-Pi is set up and can be used as a border router.
 
 
-### nRF52840-Dongle Setup
 
 <!---
 TODO: REWRITE THIS SECTION
@@ -359,24 +392,20 @@ Test with: ...
 ### Dongle Connectivity
 
 As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected 
-to the nRF52840-Dongle. This section explains how this connection can be established.
+to the nRF52840-Dongle. This section explains how this connection can be established. This setup has to be done every
+time you want to use the border router.
 
-#### Prerequisites
-1. Plug the raspberry-pi into a socket.
-2. Connect the raspberry-pi a network via ethernet.
-3. Plug the nRF52840-Dongle into one of the USB ports of the raspberry-pi.
 
 #### Raspberry-Pi / nRF52840-Dongle Terminal Setup
 1. Connect to the raspberry-pi via ssh and enter the password:
 ```shell
 ssh riot@<network-ip-addr>
 ```
-<!--- MOVE gnrc_border_router TO ANOTHER FOLDER (OUT OF RIOT) AND ADJUST FOLLOWING POINT(S) --->
-2. In the raspberry-pi shell (riot@6lbr-3) go to the gnrc_border_router directory:
+2. In the raspberry-pi shell (riot@6lbr-3) navigate to the gnrc_border_router directory:
 ```shell
-cd ~/AllRIOt/examples/gnrc_border_router
+cd ~/AllRIOT/examples/gnrc_border_router
 ```
-3. Open the border router terminal on the nRF52840-Dongle (requires a [flashed nRF52840-Dongle](#nrf52840-dongle-setup)):
+3. Open the border router terminal on the nRF52840-Dongle (requires the [nRF52840-Dongle setup](#nrf52840-dongle-setup)):
 ```shell
 BOARD=nrf52840dongle make term
 ```

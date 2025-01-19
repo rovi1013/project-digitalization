@@ -329,7 +329,11 @@ riot@6lbr-3:~ $
 ```shell
 git clone https://github.com/AllRIOT/RIOT.git AllRIOT
 ```
-7. Now the Raspberry-Pi is set up and can be used as a border router.
+7. Install the RIOT-OS requirements (may need to remove gcc-multilib):
+```shell
+sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3-serial
+```
+8. Now the Raspberry-Pi is set up and can be used as a border router.
 
 
 
@@ -395,7 +399,6 @@ As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF5284
 to the nRF52840-Dongle. This section explains how this connection can be established. This setup has to be done every
 time you want to use the border router.
 
-
 #### Raspberry-Pi / nRF52840-Dongle Terminal Setup
 1. Connect to the raspberry-pi via ssh and enter the password:
 ```shell
@@ -405,7 +408,7 @@ ssh riot@<network-ip-addr>
 ```shell
 cd ~/AllRIOT/examples/gnrc_border_router
 ```
-3. Open the border router terminal on the nRF52840-Dongle (requires the [nRF52840-Dongle setup](#nrf52840-dongle-setup)):
+3. Open the border router terminal on the nRF52840-Dongle (requires the [Raspberry-Pi / nRF52840-Dongle setup](#raspberry-pi--nrf52840-dongle-setup)):
 ```shell
 BOARD=nrf52840dongle make term
 ```

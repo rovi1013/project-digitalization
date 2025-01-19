@@ -196,7 +196,7 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
 
     bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
     if (bytes_sent > 0) {
-        puts("Senden ist fehlgeschlagen");
+        //puts("Senden ist fehlgeschlagen");
         req_count++;
     }
     return bytes_sent;
@@ -273,7 +273,7 @@ int coap_control(int argc, char **argv) {
 
         /* Sending the message */
         printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);
-        if (!_send(&buf[0], len, argv[apos], argv[apos+1], NULL, tl)) {
+        if (_send(&buf[0], len, argv[apos], argv[apos+1], NULL, tl) == 0) {
             puts("gcoap_cli: msg send failed");
         }
 

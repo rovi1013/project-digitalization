@@ -3,13 +3,14 @@ from aiocoap import *
 
 async def main():
     # The server address and port
-    uri = "coap://127.0.0.2:5683/message"
+    uri = "coap://192.168.0.213:5683/message"
 
     # The payload as a byte string
     payload = b"chat_id=7779371199&text=123456789 T E S T"
 
     # Create a CoAP message
     request = Message(code=POST, uri=uri, payload=payload)
+    request.mid = 123
 
     # Create a CoAP client context
     protocol = await Context.create_client_context()

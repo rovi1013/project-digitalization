@@ -164,22 +164,22 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
 
 /* Parsing the endpoint */
 bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *port_str) {
-    /*
+
     if (netutils_get_ipv4((ipv4_addr_t *)&remote->addr, addr_str) < 0) {
-        puts("gcoap_cli: unable to parse IPv4 address");
+        puts("unable to parse IPv4 address");
         return false;
     }
     remote->netif = SOCK_ADDR_ANY_NETIF;
     remote->family = AF_INET;
 
-
     remote->port = atoi(port_str);
     if (remote->port == 0) {
-        puts("gcoap_clie: unable to parse port");
+        puts("unable to parse port");
         return false;
     }
-    */
 
+
+    /*
     netif_t *netif;
 
     if (netutils_get_ipv6((ipv6_addr_t *)&remote->addr, &netif, addr_str) < 0) {
@@ -194,7 +194,7 @@ bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *por
         puts("unable to parse destination port");
         return false;
     }
-
+    */
     return true;
 }
 
@@ -210,7 +210,7 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
     }
     remote = &new_remote;
 
-    printf("Konvertierte Serveradresse: %d\n", remote->addr.ipv6[0]);
+    printf("Konvertierte Serveradresse: %d, %d, %d, %d\n", remote->addr.ipv4[0], remote->addr.ipv4[1], remote->addr.ipv4[2], remote->addr.ipv4[3]);
     printf("Konvertierter Port: %d\n", remote->port);
 
     bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);

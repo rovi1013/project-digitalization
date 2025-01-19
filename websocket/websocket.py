@@ -88,6 +88,7 @@ class CoAPResource(resource.Resource):
 
             chat_id = data.get("chat_id")
             text = data.get("text")
+            print(f"text: {text} and id: {chat_id}")
 
             if not chat_id or not text:
                 return aiocoap.Message(
@@ -97,7 +98,7 @@ class CoAPResource(resource.Resource):
             # Send the message to Telegram
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    telegram_api_url, json={"chat_id": chat_id, "text": text}
+                    f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id, "text": text}
                 )
 
             if response.status_code == 200:

@@ -3,6 +3,7 @@
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
 control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
 
+TODO: Change all AllRIOT appearances to standard RIOT + make changes to the files for dongle setup (change configuration)
 
 ## Prerequisites
 
@@ -286,7 +287,7 @@ this we are using a raspberry-pi and the nRF52840-Dongle. These two together can
 The first thing to do is to set up the raspberry-pi and the nRF52840-Dongle. After this is done you can connect the
 nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity. 
 
-1. Set up raspberry-pi and nRF52840-Dongle (once)
+1. Set up nRF52840-Dongle and raspberry-pi (once)
 2. Connect nRF52840-DK board and nRF52840-Dongle (every time)
 3. AUTOMATICALLY: Establish internet connectivity
 
@@ -294,8 +295,30 @@ nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity.
 
 ![Network Diagram](./assets/diagram-network.svg)
 
+### nRF52840-Dongle Setup
 
-### Raspberry-Pi / nRF52840-Dongle Setup
+The nRF52840-Dongle setup can only be done on a standard (x64/x86 based) Linux machine. Because we need the tool
+[nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) to flash the dongle and this tool is NOT
+available for ARM based machines. Therefore, **this setup cannot be done on the raspberry pi**.
+
+1. [Download](https://www.nordicsemi.com/Products/Development-tools/nRF-Util/Download#infotabs) and install nRF Util 
+by following the [documentation](https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html)
+2. Plug the nRF52840-Dongle into any USB port of your device (still the x64/x86 Linux machine).
+3. Get the AllRIOT version of the `gnrc_border_router` example:
+```shell
+git clone https://github.com/AllRIOT/RIOT.git AllRIOT
+```
+4. Navigate to the gnrc_border_router directory:
+```shell
+cd AllRIOT/examples/gnrc_border_router
+```
+5. Make and flash the border example to the nRF52840-Dongle:
+```shell
+BOARD=nrf52840dongle make all clean flash
+```
+6. The nRF52840-Dongle is now set up.
+
+### Raspberry-Pi Setup
 
 This setup has to be run once (and only once) in order to prepare the border router functionality.
 
@@ -329,11 +352,7 @@ riot@6lbr-3:~ $
 ```shell
 git clone https://github.com/AllRIOT/RIOT.git AllRIOT
 ```
-7. Install the RIOT-OS requirements (may need to remove gcc-multilib):
-```shell
-sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3-serial
-```
-8. Now the Raspberry-Pi is set up and can be used as a border router.
+7. Now the Raspberry-Pi is set up and can be used as a border router.
 
 
 
@@ -397,7 +416,8 @@ Test with: ...
 
 As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected 
 to the nRF52840-Dongle. This section explains how this connection can be established. This setup has to be done every
-time you want to use the border router.
+time you want to use the border router. **This section requires the [Raspberry-Pi Setup](#raspberry-pi-setup) & 
+[nRF52840-Dongle Setup](#nrf52840-dongle-setup).**
 
 #### Raspberry-Pi / nRF52840-Dongle Terminal Setup
 1. Connect to the raspberry-pi via ssh and enter the password:
@@ -408,7 +428,7 @@ ssh riot@<network-ip-addr>
 ```shell
 cd ~/AllRIOT/examples/gnrc_border_router
 ```
-3. Open the border router terminal on the nRF52840-Dongle (requires the [Raspberry-Pi / nRF52840-Dongle setup](#raspberry-pi--nrf52840-dongle-setup)):
+3. Open the border router terminal on the nRF52840-Dongle:
 ```shell
 BOARD=nrf52840dongle make term
 ```

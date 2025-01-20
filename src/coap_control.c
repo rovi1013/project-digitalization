@@ -54,6 +54,9 @@ static gcoap_socket_type_t _get_tl(const char *uri)
     return GCOAP_SOCKET_TYPE_UNDEF;
 }
 
+static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
+                     void *ctx, gcoap_socket_type_t tl);
+
 //static ssize_t _send(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
                      //void *ctx, gcoap_socket_type_t tl);
 
@@ -152,9 +155,9 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
                 coap_opt_add_proxy_uri(pdu, urip.scheme);
             }
 
-            //int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
-            //gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
-            //_send((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
+            int len = coap_opt_finish(pdu, COAP_OPT_FINISH_NONE);
+            gcoap_socket_type_t tl = _get_tl(*_proxy_uri ? _proxy_uri : _last_req_uri);
+            _sending((uint8_t *)pdu->hdr, len, remote, memo->context, tl);
         }
         else {
             puts("--- blockwise complete ---");
@@ -300,4 +303,14 @@ int coap_control(int argc, char **argv) {
 
     }
     return 0;
+}
+
+static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
+                     void *ctx, gcoap_socket_type_t tl)
+{
+    ssize_t bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
+    if (bytes_sent > 0) {
+        req_count++;
+    }
+    return bytes_sent;
 }

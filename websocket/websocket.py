@@ -1,12 +1,16 @@
-import uvicorn
-from fastapi import FastAPI, WebSocket, Request
-from dotenv import load_dotenv
-import httpx
-import os
 import argparse
-
 import asyncio
-from aiocoap import Context, Message, POST, resource
+import logging
+import os
+
+import aiocoap
+import aiocoap.resource as resource
+from aiocoap.numbers.codes import Code
+import httpx
+from dotenv import load_dotenv
+from fastapi import FastAPI, WebSocket, Request
+import uvicorn
+
 
 app = FastAPI()
 
@@ -77,36 +81,42 @@ async def get_updates(offset: int = None, timeout: int = 0):
 class CoAPResource(resource.Resource):
     """CoAP Resource to handle POST requests"""
 
-    async def render_post(self, request: Message):
+    async def render_post(self, request):
         try:
-            # Parse the payload
+            # Decode and parse the payload
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
             chat_id = data.get("chat_id")
             text = data.get("text")
-
-            print(f"Received Message ID (mid): {request.mid}")
+            print(f"Text: '{text}' and id: '{chat_id}'")
 
             if not chat_id or not text:
-                return Message(code=400, payload=b"Missing chat_id or text")
-
-            # Loggen der `mid`, um den Wert zu sehen
-            print(f"Message ID (mid): {request.mid}")
+                return aiocoap.Message(
+                    code=Code.BAD_REQUEST, payload=b"Missing chat_id or text"
+                )
 
             # Send the message to Telegram
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{telegram_api_url}/sendMessage",
-                    json={"chat_id": chat_id, "text": text},
+                    f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id, "text": text}
                 )
 
             if response.status_code == 200:
-                return Message(code=200, payload=b"Message sent successfully")
+                return aiocoap.Message(
+                    code=Code.CONTENT, payload=b"Message sent successfully"
+                )
             else:
-                return Message(code=500, payload=f"Telegram API error: {response.text}".encode("utf-8"))
+                return aiocoap.Message(
+                    code=Code.BAD_GATEWAY,
+                    payload=f"Telegram API error: {response.text}".encode("utf-8"),
+                )
+
         except Exception as e:
-            return Message(code=500, payload=f"Error: {str(e)}".encode("utf-8"))
+            return aiocoap.Message(
+                code=Code.INTERNAL_SERVER_ERROR,
+                payload=f"Internal server error: {str(e)}".encode("utf-8"),
+            )
 
 
 async def coap_server(server_url):
@@ -117,7 +127,7 @@ async def coap_server(server_url):
     root.add_resource(('.well-known/core',), resource.WKCResource(root.get_resources_as_linkheader))
     root.add_resource(('message',), CoAPResource())
 
-    await Context.create_server_context(root, bind=(server_url, 5683))
+    await aiocoap.Context.create_server_context(root, bind=(server_url, 5683))
     print(f"{BLUE}INFO{RESET}:\t  CoAP server running on coap://{server_url}:5683")
     await asyncio.sleep(3600)  # Server runs for 1 hour
 
@@ -135,12 +145,14 @@ async def start_servers(server_url):
     # Beide Server gleichzeitig laufen lassen
     await asyncio.gather(coap_task, fastapi_task)
 
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 # FastAPI und CoAP-Server starten
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the websocket.")
-    parser.add_argument("-u", "--url", metavar='', type=str, default="127.0.0.1",
-                        help="Local IP address where the uvicorn server is started (default: 127.0.0.1)")
+    parser.add_argument("-u", "--url", metavar='', type=str, default="0.0.0.0",
+                        help="Local IP address where the uvicorn server is started (default: 0.0.0.0)")
     args = parser.parse_args()
     uvicorn_url = args.url
     load_dotenv(".env")  # Laden der .env-Datei für das Telegram-Token

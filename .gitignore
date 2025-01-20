@@ -1,11 +1,9 @@
 .vscode
 .idea
 .temp
-.venv
-
+*venv
+*__pycache__
 *.draft
-
-bin
+*.env*
+*bin
 /cmake-build-debug/
-/websocket/.env
-/websocket/coap_request.py

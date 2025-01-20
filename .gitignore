@@ -5,6 +5,5 @@
 *__pycache__
 *.draft
 *.env*
-
-bin
+*bin
 /cmake-build-debug/

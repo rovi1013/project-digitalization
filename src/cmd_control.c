@@ -10,6 +10,7 @@
 #include "cpu_temperature.h"
 #include "cmd_control.h"
 #include "utils/error_handler.h"
+#include "coap_control.h"
 
 // Handle LED control commands
 static int led_control(const int argc, char **argv) {
@@ -39,10 +40,31 @@ static int cpu_temp_control(const int argc, char **argv) {
     return 0;
 }
 
+static int coap_test_control(const int argc, char **argv) {
+    if (argc != 1) {
+        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        puts("Usage: coap-test");
+        return ERROR_INVALID_ARGS;
+    }
+
+    char *type = "post";
+    char *addr = "192.168.0.213";
+    char *port = "5683";
+    char *path = "/message";
+    char *data = "CoAP-Test123";
+    char *argvNew[] = {argv[0], type, addr, port, path, data};
+    int argcNew = 6;
+
+    coap_control(argcNew, argvNew);
+
+    return 0;
+}
+
 // Shell commands array
 static const shell_command_t cmd_control_shell_commands[] = {
     { "led", "Control LEDs (e.g., 'led 0 on')", led_control },
     { "cpu-temp", "Get CPU temperature (e.g., 'cpu-temp')", cpu_temp_control },
+    {  "coap-test", "Send a custom message to coap://127.0.0.2:5683", coap_test_control },
     { NULL, NULL, NULL } // End marker
 };
 

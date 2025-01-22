@@ -127,7 +127,8 @@ async def coap_server(server_url):
     root.add_resource(('.well-known/core',), resource.WKCResource(root.get_resources_as_linkheader))
     root.add_resource(('message',), CoAPResource())
 
-    await aiocoap.Context.create_server_context(root, bind=(server_url, 5683))
+    # await aiocoap.Context.create_server_context(root, bind=(server_url, 5683))
+    await aiocoap.Context.create_server_context(root, bind=("fe80::a41d:b3f5:5212:392f%enp0s3", 5683))
     print(f"{BLUE}INFO{RESET}:\t  CoAP server running on coap://{server_url}:5683")
     await asyncio.sleep(3600)  # Server runs for 1 hour
 

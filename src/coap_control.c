@@ -168,6 +168,7 @@ static void _resp_handler(const gcoap_request_memo_t *memo, coap_pkt_t* pdu,
 /* Parsing the endpoint */
 bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *port_str) {
 
+    /*
     if (netutils_get_ipv4((ipv4_addr_t *)&remote->addr, addr_str) < 0) {
         puts("unable to parse IPv4 address");
         return false;
@@ -181,8 +182,9 @@ bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *por
         return false;
     }
 
+    printf("Konvertierte Serveradresse: %d, %d, %d, %d\n", remote->addr.ipv4[0], remote->addr.ipv4[1], remote->addr.ipv4[2], remote->addr.ipv4[3]);
+    */
 
-    /*
     netif_t *netif;
 
     if (netutils_get_ipv6((ipv6_addr_t *)&remote->addr, &netif, addr_str) < 0) {
@@ -197,7 +199,13 @@ bool _parse_endpoint(sock_udp_ep_t *remote, const char*addr_str, const char *por
         puts("unable to parse destination port");
         return false;
     }
-    */
+
+
+    printf("Konvertierte Serveradresse: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", remote->addr.ipv6[0], remote->addr.ipv6[1], remote->addr.ipv6[2],
+        remote->addr.ipv6[3], remote->addr.ipv6[4], remote->addr.ipv6[5], remote->addr.ipv6[6], remote->addr.ipv6[7], remote->addr.ipv6[8], remote->addr.ipv6[9],
+        remote->addr.ipv6[10], remote->addr.ipv6[11], remote->addr.ipv6[12], remote->addr.ipv6[13], remote->addr.ipv6[14], remote->addr.ipv6[15]);
+
+    printf("Konvertierter Port: %d\n", remote->port);
     return true;
 }
 
@@ -213,12 +221,12 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
     }
     remote = &new_remote;
 
-    printf("Konvertierte Serveradresse: %d, %d, %d, %d\n", remote->addr.ipv4[0], remote->addr.ipv4[1], remote->addr.ipv4[2], remote->addr.ipv4[3]);
-    printf("Konvertierter Port: %d\n", remote->port);
+    //printf("Konvertierte Serveradresse: %d, %d, %d, %d\n", remote->addr.ipv4[0], remote->addr.ipv4[1], remote->addr.ipv4[2], remote->addr.ipv4[3]);
+    //printf("Konvertierter Port: %d\n", remote->port);
 
     bytes_sent = gcoap_req_send(buf, len, remote, NULL, _resp_handler, ctx, tl);
 
-    printf("Gesendete Bytes: %d\n", bytes_sent);
+    printf("Wert von bytes_sent: %d\n", bytes_sent);
 
     if (bytes_sent > 0) {
         req_count++;
@@ -277,7 +285,9 @@ int coap_control(int argc, char **argv) {
         }
 
         size_t paylen = (argc == apos + 4) ? strlen(argv[apos+3]) : 0;
+        printf("paylen: %u\n", (unsigned)paylen);
         if (paylen) {
+            puts("I entered if paylen");
             coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);
             len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
             if (pdu.payload_len >= paylen) {
@@ -292,8 +302,11 @@ int coap_control(int argc, char **argv) {
         else {
             len = coap_opt_finish(&pdu, COAP_OPT_FINISH_NONE);
         }
-
+        printf("Wert von len: %u\n", (unsigned)len);
+        printf("pdu: %p\n", pdu.payload);
         gcoap_socket_type_t tl = _get_tl(_last_req_uri);
+
+        printf("Paket: %p\n", pdu.hdr);
 
         /* Sending the message */
         printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);

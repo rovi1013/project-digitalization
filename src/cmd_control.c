@@ -51,7 +51,8 @@ static int coap_test_control(const int argc, char **argv) {
     char *type = "post";
     //char *addr = "fe80::a41d:b3f5:5212:392f";
     //char *addr = "fe80::6b96:48d0:4a13:27f5";
-    char *addr = "fe80::a74:adc8:de28:e5a6";
+    //char *addr = "fe80::a74:adc8:de28:e5a6";
+    char *addr = "2001:470:7347:c822::1234";
     char *port = "5683";
     char *path = "/message";
     char *data = "chat_id=7779371199&text=Hello, CoAP!";

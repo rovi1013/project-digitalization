@@ -18,6 +18,7 @@ Provides the central shell command interface for controlling LEDs, reading CPU t
 * Register the following commands:
     * led \<id> \<action>: Controls LEDs (see [led_control](#class-led_control)).
     * cpu-temp: Reads the CPU temperature (see [cpu_temperature](#class-cpu_temperature)).
+    * coap-test: Sends a test message to the telegram bot.
 
 
 ## Class led_control
@@ -63,3 +64,45 @@ Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://do
 * Differentiation between status == 0 and status < 0
 * Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
 * Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
+
+## Class coap_control
+
+Sends CoAP-requests and handles the responses.
+
+### coap_control
+* The main method that needs to be called for sending requests
+* Expects 6 arguments:
+  * command: The command used to access the control
+  * type: The request type (GET|POST) supported
+  * address: The ipv6-adress of the websocket
+  * port: The port of the websocket
+  * path: The path of the websocket (e.g. /send_message)
+  * data: The target destination information (the Telegram Server) required by the websocket as well as the chat_ids and the text message
+* Initializes the request by utilizing the gcoap library
+* Prepares the payload in case of a POST request
+* Sends the message via _send and checks if the sending was successfull
+
+### _send
+* Sends the request to the given destination
+* Expects 6 arguments:
+  * buf: Buffer
+  * len: Length
+  * *addr_str: Adress
+  * *port_str: Port
+  * *ctx: Context
+  * tl: Socket Type
+* Utilizes _parse_endpoint to reformat the given adress and port for gcoap. The details are saved in the variable remote
+* The number of bytes sent is returned
+
+### _sending
+* An alternative implementation of _send 
+* Necessary for the response handling as the server adress and port are not available as a string
+* TODO: Needs to be merged with _send by reworking the code base of coap_control
+
+### _parse_endpoint
+* Parses a given server adress and port into a readable format for gcoap
+* Utilzes the netutils package to save the new details in the variable remote
+
+### _resp_handler
+* Handler to take care of any response received from the websocket
+* Necessary to investigate potential issues like timeouts or error codes

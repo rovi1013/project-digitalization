@@ -56,6 +56,7 @@ static int coap_test_control(const int argc, char **argv) {
     char *port = "5683";
     char *path = "/message";
     char *data = "chat_id=7779371199&text=Hello, CoAP!";
+    //char *data = "chat_id=7837794124&text=Gute Besserung wünscht dir das nrf52840dk!";
     char *argvNew[] = {command, type, addr, port, path, data};
     int argcNew = 6;
 

@@ -293,7 +293,7 @@ nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity.
 
 **Network Diagram**
 
-![Network Diagram](./assets/diagram-network.svg)
+![Network Diagram](./assets/network-diagram.svg)
 
 ### nRF52840-Dongle Setup
 

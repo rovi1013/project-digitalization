@@ -7,3 +7,4 @@
 *.env*
 *bin
 /cmake-build-debug/
+.old

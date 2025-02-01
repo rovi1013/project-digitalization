@@ -3,13 +3,13 @@ Description=CoAP Server Auto-start
 After=network.target
 
 [Service]
-WorkingDirectory=/home/pi
-ExecStart=/bin/bash -c 'export COAP_SERVER_IP=$(python3 /home/pi/get_ipv6.py) && /home/pi/venv/bin/python /home/pi/coap_websocket.py'
+WorkingDirectory=/home/rpi.../project-digitalization/webserver
+Environment="COAP_SERVER_IP=fe80::a41d:b3f5:5212:392f"
+Environment="PYTHONUNBUFFERED=1"
+Environment="VIRTUAL_ENV=/home/rpi.../project-digitalization/webserver/.venv"
+ExecStart=/bin/bash -c '$VIRTUAL_ENV/bin/python /home/rpi.../project-digitalization/webserver/coap_websocket.py'
 Restart=always
 User=pi
-Environment="PYTHONUNBUFFERED=1"
-Environment="PATH=/home/pi/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="VIRTUAL_ENV=/home/pi/venv"
 
 [Install]
 WantedBy=multi-user.target

@@ -58,6 +58,12 @@ bot_token = YOUR_BOT_TOKEN_HERE
 
 [chat_ids]
 list = 12345678,87654321
+
+[websocket]
+url = https://api.telegram.org/bot
+address = 2001:470:7347:c822::1234
+port = 5683
+endpoint = /message
 EOL
 
         echo "⚠️ A template has been created at: $CONFIG_FILE"

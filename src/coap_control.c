@@ -326,6 +326,59 @@ int coap_control(int argc, char **argv) {
     return 0;
 }
 
+int coap_post(int argc, char **argv) {
+    char *method_codes[] = {"ping", "get", "post", "put"};
+    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
+    coap_pkt_t pdu;
+    size_t len;
+
+    unsigned msg_type = COAP_TYPE_CON;
+    char *uri = argv[apos+2];
+    int uri_len = strlen(argv[apos+2]);
+
+    /* Definition des Request-Types und Erstellung des Requests
+     * Mögliche Types sind {"ping", "get", "post", "put"}
+     * Definition über Index von 0 bis 3
+     */
+    int index = 2;
+    gcoap_req_init(&pdu, &buf[0], CONFIG_GCOAP_PDU_BUF_SIZE, index, uri);
+    coap_hdr_set_type(pdu.hdr, msg_type);
+
+    /* Überprüfung, ob eine Payload definiert wurde */
+    size_t paylen = (argc == apos + 4) ? strlen(argv[apos+3]) : 0;
+    if (paylen == 0) {
+        printf("Payload fehlt, Prozess abgebrochen";
+        return 0;
+    }
+
+    /* Vorbereitung der Payload */
+    memset(_last_req_path, 0, _LAST_REQ_PATH_MAX);
+    if (uri_len < _LAST_REQ_PATH_MAX) {
+        memcpy(_last_req_path, uri, uri_len);
+    }
+
+    coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);
+    len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
+
+    if (pdu.payload_len >= paylen) {
+        memcpy(pdu.payload, argv[apos+3], paylen);
+        len += paylen;
+    }
+    else {
+        puts("gcoap_cli: msg buffer too small");
+        return 1;
+    }
+
+    gcoap_socket_type_t tl = _get_tl(_last_req_uri);
+
+    /* Sending the message */
+    printf("gcoap_cli: sending msg ID %u, %u bytes\n", coap_get_id(&pdu), (unsigned) len);
+    if (_send(&buf[0], len, argv[apos], argv[apos+1], NULL, tl) == 0) {
+        puts("gcoap_cli: msg send failed");
+    }
+}
+
+
 static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
                      void *ctx, gcoap_socket_type_t tl)
 {

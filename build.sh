@@ -83,6 +83,13 @@ build_firmware() {
     fi
 }
 
+# Function to unlock the nrf device with openocd
+unlock_nrf_device() {
+    echo "🔍 Unlocking the nrf device..."
+    openocd -c 'interface jlink; transport select swd;
+    source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
+}
+
 # Function to flash the firmware
 flash_firmware() {
     echo "📡 Flashing firmware..."
@@ -104,6 +111,7 @@ if [ ! -f "$CHECKS_DONE_FILE" ]; then
     check_packages
     check_interface
     check_config_file
+    unlock_nrf_device
     touch "$CHECKS_DONE_FILE"
 else
     echo "⚡ Skipping system checks (already completed in this session)."

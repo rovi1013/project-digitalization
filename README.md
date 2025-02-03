@@ -51,6 +51,19 @@ sudo ip link set tap0 up
 For communication with the telegram bot the nRF52840-DK board requires an internet connection. This 
 connection is established by following the steps described in [Border Router Setup](#border-router-setup).
 
+### Configuration File
+To run the application you have to create a config.ini file in [src/](./src) and paste this into it:
+```ini
+[telegram]
+bot_token = your_telegram_bot_token
+
+[chat_ids]
+list = telegram_chat_id_1,telegram_chat_id_2,...,telegram_chat_id_20
+```
+
+This is needed for the application to be able to send messages to specific chats (`chat_ids`) to a specific bot
+(`bot_token`). The list of chat ids is limited to 20 by design in the application, you can use fewer but at least one.
+
 
 ## Usage
 
@@ -64,12 +77,24 @@ Navigate to the project directory:
 cd project-digitalization
 ```
 
-Build the application (this includes RIOT-OS) and open a terminal to the board:
+Build and flash the application (this includes RIOT-OS):
 ```shell
-make clean all flash term
+./build.sh
 ```
 
-### Shell Commands
+Build and flash the application and open the terminal (useful for debugging):
+```shell
+./build.sh term
+```
+
+Further possibilities with `build.sh`:
+```shell
+./build.sh flash-only       # Only flash the application (from src/bin/BOARD/)
+./build.sh build-only       # Only build the application
+./build.sh term-only        # Only open the terminal (requires application running)
+```
+
+### On-Board Shell Commands
 
 Control LEDs (brightness can be any value 0-255):
 ```shell
@@ -114,7 +139,7 @@ make info-modules
 
 
 ## Project Structure
-
+TODO: Update
 ```shell
 project/digitalization
 ├── README.md                     # Documentation
@@ -160,6 +185,17 @@ included into the application as a module. For further information on their func
 The websocket running separately used to convert the messages, coming from the nRF52740-DK board, into https requests
 for the telegram bot. The websocket is located in [/websocket](./websocket), further information on its functionality
 can be found in the [Websocket README](./websocket/README.md).
+
+
+## Build File
+
+The [build.sh](./build.sh) file is a simple bash script that allows automated checks of the prerequisites and requirements. 
+If these checks succeed the application will be build and/or flashed and/or open the application terminal. 
+
+The script is checking:
+* Are all the required packages installed?
+* Is the interface tap0 up and running?
+* Does the config.ini file exists?
 
 
 ## RIOT-OS Modules

@@ -31,16 +31,26 @@ class CoAPResource(resource.Resource):
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
             telegram_bot_token = data.get("telegram_bot_token")
-            chat_ids = data.get("chat_id")
+            chat_ids = data.get("chat_ids")
             text = data.get("text")
 
-            logging.info(f"Received message request: chat_id={chat_ids}, text='{text}'")
-
-            if not telegram_bot_token or not chat_ids or not text:
+            if not telegram_bot_token:
+                logging.error(f"Telegram bot token is missing, failed to send message")
                 return aiocoap.Message(
-                    code=Code.BAD_REQUEST, payload=b"Missing bot token, chat_ids, or text"
+                    code=Code.BAD_REQUEST, payload=b"Missing bot token"
+                )
+            if not chat_ids:
+                logging.error(f"Chat id(s) not available, failed to send message")
+                return aiocoap.Message(
+                    code=Code.BAD_REQUEST, payload=b"Missing chat_ids"
+                )
+            if not text:
+                logging.error(f"Chat text is missing, failed to send message")
+                return aiocoap.Message(
+                    code=Code.BAD_REQUEST, payload=b"Missing text"
                 )
 
+            logging.info(f"Received message request: bot_token={telegram_bot_token}, chat_ids={chat_ids}, text='{text}'")
             telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}"
             chat_ids_list = chat_ids.split(",")
 

@@ -1,0 +1,11 @@
+[telegram]
+bot_token = your_telegram_bot_token
+
+[chat_ids]
+list = telegram_chat_id_1,telegram_chat_id_2,...,telegram_chat_id_20
+
+[websocket]
+url = https://api.telegram.org/bot
+address = 2001:470:7347:c822::1234
+port = 5683
+endpoint = /message

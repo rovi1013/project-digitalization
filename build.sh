@@ -55,9 +55,7 @@ check_config_file() {
         cat <<EOL > "$CONFIG_FILE"
 [telegram]
 bot_token = YOUR_BOT_TOKEN_HERE
-
-[chat_ids]
-list = 12345678,87654321
+chat_ids = 12345678,87654321
 
 [websocket]
 url = https://api.telegram.org/bot

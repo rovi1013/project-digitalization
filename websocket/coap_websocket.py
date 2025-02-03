@@ -5,7 +5,6 @@ import logging
 import aiocoap
 import httpx
 from aiocoap import resource, Code
-from dotenv import load_dotenv
 
 # Configure logging
 LOG_FILE = os.path.join(os.path.dirname(__file__), "coap_server.log")
@@ -17,11 +16,6 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-
-# Load environment variables
-load_dotenv(".env")
-telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}"
 
 # Get IPv6 address from systemd environment
 coap_server_ip = os.getenv("COAP_SERVER_IP", "::1")  # Default to localhost (::1) if unset
@@ -36,31 +30,32 @@ class CoAPResource(resource.Resource):
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
-            chat_id = data.get("chat_id")
+            telegram_bot_token = data.get("telegram_bot_token")
+            chat_ids = data.get("chat_id")
             text = data.get("text")
-            logging.info(f"Received message request: chat_id={chat_id}, text='{text}'")
 
-            if not chat_id or not text:
+            logging.info(f"Received message request: chat_id={chat_ids}, text='{text}'")
+
+            if not telegram_bot_token or not chat_ids or not text:
                 return aiocoap.Message(
-                    code=Code.BAD_REQUEST, payload=b"Missing chat_id or text"
+                    code=Code.BAD_REQUEST, payload=b"Missing bot token, chat_ids, or text"
                 )
+
+            telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}"
+            chat_ids_list = chat_ids.split(",")
 
             async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id, "text": text}
-                )
+                for chat_id in chat_ids_list:
+                    response = await client.post(
+                        f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id.strip(), "text": text}
+                    )
 
-            if response.status_code == 200:
-                logging.info("Message sent successfully")
-                return aiocoap.Message(
-                    code=Code.CONTENT, payload=b"Message sent successfully"
-                )
-            else:
-                logging.error(f"Telegram API error: {response.text}")
-                return aiocoap.Message(
-                    code=Code.BAD_GATEWAY,
-                    payload=f"Telegram API error: {response.text}".encode("utf-8"),
-                )
+                    if response.status_code == 200:
+                        logging.info(f"Message sent to {chat_id}")
+                    else:
+                        logging.error(f"Telegram API error for {chat_id}: {response.text}")
+
+            return aiocoap.Message(code=Code.CONTENT, payload=b"Messages sent successfully")
 
         except Exception as e:
             logging.exception("Exception occurred while processing request")
@@ -69,9 +64,8 @@ class CoAPResource(resource.Resource):
                 payload=f"Internal server error: {str(e)}".encode("utf-8"),
             )
 
-
 async def coap_server():
-    """Start CoAP server using COAP_SERVER_IP from environment."""
+    """Start CoAP server on COAP_SERVER_IP."""
     logging.info(f"Starting CoAP server on coap://[{coap_server_ip}]:5683")
 
     root = resource.Site()

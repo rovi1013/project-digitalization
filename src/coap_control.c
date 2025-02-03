@@ -15,6 +15,14 @@
 #include "uri_parser.h"
 #include "net/utils.h"
 #include "fmt.h"
+#include "coap_control.h"
+
+const char telegram_bot_token[BOT_TOKEN_LENGTH] = TELEGRAM_BOT_TOKEN;
+
+// Convert space-separated chat IDs into an array
+const char chat_ids[MAX_CHAT_IDS][CHAT_ID_LENGTH] = {
+    CHAT_IDS
+};
 
 //static bool _proxied = false;
 //static char proxy_uri[64];

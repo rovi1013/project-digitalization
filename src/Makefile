@@ -15,6 +15,14 @@ DEVELHELP ?= 1
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
+# Extract values from config.ini
+TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
+CHAT_IDS := $(shell awk -F' = ' '/list/ {print $$2}' config.ini | tr ',' ' ')
+
+# Pass values as C macros
+CFLAGS += -DTELEGRAM_BOT_TOKEN=\"$(TELEGRAM_BOT_TOKEN)\"
+CFLAGS += -DCHAT_IDS_LIST=\"$(CHAT_IDS)\"
+
 # RIOT modules
 USEMODULE += shell
 USEMODULE += shell_cmds_default

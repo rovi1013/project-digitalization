@@ -318,6 +318,19 @@ int coap_control(int argc, char **argv) {
     return 0;
 }
 
+int coap_post(int argc, char **argv) {
+    char *method_codes[] = {"ping", "get", "post", "put"};
+    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
+    coap_pkt_t pdu;
+    size_t len;
+    unsigned msg_type = COAP_TYPE_CON;
+    char *uri = NULL;
+    int uri_len = 0;
+
+    return 0;
+}
+
+
 static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
                      void *ctx, gcoap_socket_type_t tl)
 {

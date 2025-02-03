@@ -67,7 +67,7 @@ coap_request_t init_coap_request(void) {
         .address = ADDRESS;
         .port = PORT;
         .endpoint = ENDPOINT;
-        .data = MESSAGE_DATA;
+        .data = "test";
         .telegram_bot_token = TELEGRAM_BOT_TOKEN;
         .chat_ids = { CHAT_IDS };
     }

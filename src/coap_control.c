@@ -17,13 +17,6 @@
 #include "fmt.h"
 #include "coap_control.h"
 
-const char telegram_bot_token[BOT_TOKEN_LENGTH] = TELEGRAM_BOT_TOKEN;
-
-// Convert space-separated chat IDs into an array
-const char chat_ids[MAX_CHAT_IDS][CHAT_ID_LENGTH] = {
-    CHAT_IDS
-};
-
 //static bool _proxied = false;
 //static char proxy_uri[64];
 #define _LAST_REQ_PATH_MAX (64)
@@ -68,6 +61,19 @@ static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
 //static ssize_t _send(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
                      //void *ctx, gcoap_socket_type_t tl);
 
+coap_request_t init_coap_request(void) {
+    coap_request_t coap_request = {
+        .url = URL;
+        .address = ADDRESS;
+        .port = PORT;
+        .endpoint = ENDPOINT;
+        .data = MESSAGE_DATA;
+        .telegram_bot_token = TELEGRAM_BOT_TOKEN;
+        .chat_ids = { CHAT_IDS };
+    }
+
+    return coap_request;
+}
 
 
 // Initialize CoAP Control

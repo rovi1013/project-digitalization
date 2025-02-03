@@ -17,11 +17,19 @@ QUIET ?= 1
 
 # Extract values from config.ini
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
-CHAT_IDS := $(shell awk -F' = ' '/list/ {print $$2}' config.ini | tr ',' ' ')
+CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini | tr ',' ' ')
+URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
+ADDRESS := $(shell awk -F' = ' '/address/ {print $$2}' config.ini)
+PORT := $(shell awk -F' = ' '/port/ {print $$2}' config.ini)
+ENDPOINT := $(shell awk -F' = ' '/endpoint/ {print $$2}' config.ini)
 
 # Pass values as C macros
 CFLAGS += -DTELEGRAM_BOT_TOKEN=\"$(TELEGRAM_BOT_TOKEN)\"
-CFLAGS += -DCHAT_IDS_LIST=\"$(CHAT_IDS)\"
+CFLAGS += -DCHAT_IDS=\"$(CHAT_IDS)\"
+CFLAGS += -DURL=\"$(URL)\"
+CFLAGS += -DADDRESS\"$(ADDRESS)\"
+CFLAGS += -DPORT\"$(PORT)\"
+CFLAGS += -DENDPOINT\"$(EDNPOINT)\"
 
 # RIOT modules
 USEMODULE += shell

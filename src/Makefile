@@ -5,7 +5,7 @@ APPLICATION = project-digitalization
 BOARD ?= nrf52840dk
 
 # If 1, console is launched in parallel to the coap-loop
-CONSOLE_USE ?= 0
+CONSOLE_USE ?= 1
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../RIOT

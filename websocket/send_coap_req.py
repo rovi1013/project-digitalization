@@ -16,7 +16,7 @@ async def main():
     chat_id = args.id
 
     # The server address and port
-    uri = f"coap://[fe80::1]:5683/message"
+    uri = f"coap://2001:470:7347:c822::1234:5683/message"
 
     # The payload as a byte string
     payload = b"url=https://api.telegram.org/bot&telegram_bot_token=7975746972:AAEJo471A-1vMk76RU0-1HY0epnl0IimtWE&chat_ids=" + chat_id.encode("utf-8") + b"&text=" + telegram_msg.encode("utf-8")

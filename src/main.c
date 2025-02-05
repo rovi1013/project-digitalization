@@ -21,14 +21,16 @@ char rcv_thread_stack[THREAD_STACKSIZE_MAIN];
 
 void *coap_thread(void *arg) {
     (void) arg;
-
     while (true) {
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
 
+        char str[10];
+        sprintf(str, "%d", temp.temperature);
+
         coap_request_t request;
         init_coap_request(&request);
-        const int res = coap_post_send(&request, temp.temperature);
+        const int res = coap_post_send(&request, str);
 
         handle_error(__func__, res);
 
@@ -39,6 +41,7 @@ void *coap_thread(void *arg) {
 }
 
 void *console_thread(void *arg) {
+    (void) arg;
     cmd_control_init();
     return NULL;
 }
@@ -61,12 +64,10 @@ int main(void) {
         coap_thread, NULL, "coap_thread");
 
     //thread_2:
-    #ifdef CONSOLE_USE {
+    #ifdef CONSOLE_USE
         thread_create(rcv_thread_stack, sizeof(rcv_thread_stack),
             THREAD_PRIORITY_MAIN -1, 0,
             console_thread, NULL, "console_thread");
-    }
-
     #endif
 
     return 0;

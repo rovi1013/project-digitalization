@@ -22,6 +22,7 @@ char rcv_thread_stack[THREAD_STACKSIZE_MAIN];
 void *coap_thread(void *arg) {
     (void) arg;
     while (true) {
+        printf("Ich fange an\n");
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
 
@@ -34,7 +35,9 @@ void *coap_thread(void *arg) {
 
         handle_error(__func__, res);
 
+        printf("Ich schlafe jetzt\n");
         ztimer_sleep(ZTIMER_SEC, 60);
+        printf("ich bin aufgewacht\n");
     }
 
     return NULL;

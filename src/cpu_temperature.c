@@ -13,15 +13,17 @@
 #include "utils/error_handler.h"
 
 // Execute CPU temperature action
-cpu_temperature_t cpu_temperature_execute(void) {
+int cpu_temperature_get(cpu_temperature_t *cpu_temperature) {
+    if (!cpu_temperature) { // Null pointer
+        handle_error(__func__,ERROR_NULL_POINTER);
+        return ERROR_NULL_POINTER;
+    }
     phydat_t data;
-    cpu_temperature_t cpu_temp = {
-        .temperature = 0,
-        .scale = 0,
-        .device_name = "Unknown",
-        .timestamp = 0,
-        .status = ERROR_UNKNOWN
-    };
+    cpu_temperature->temperature = 0;
+    cpu_temperature->scale = 0;
+    snprintf(cpu_temperature->device_name, DEVICE_NAME_MAX_LEN, "%s", "Unknown");
+    cpu_temperature->timestamp = 0;
+    cpu_temperature->status = ERROR_UNKNOWN;
 
     saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
 
@@ -30,34 +32,36 @@ cpu_temperature_t cpu_temperature_execute(void) {
     (void) data;
     (void) device;
     // Mock temperature data for the native platform
-    cpu_temp.temperature = 2500; // Mock value (25.00°C)
-    cpu_temp.scale = -2;
-    snprintf(cpu_temp.device_name, DEVICE_NAME_MAX_LEN, "%s", "Mock-Temperature-Sensor");
-    cpu_temp.timestamp = 0;
-    cpu_temp.status = 0;
+    cpu_temperature->temperature = 2500; // Mock value (25.00°C)
+    cpu_temperature->scale = -2;
+    snprintf(cpu_temperature->device_name, DEVICE_NAME_MAX_LEN, "%s", "Mock-Temperature-Sensor");
+    cpu_temperature->timestamp = 0;
+    cpu_temperature->status = 0;
 #else
 
     // Check device correctness
     if (device == NULL) {
-        cpu_temp.status = ERROR_NO_SENSOR;
-        return cpu_temp;
+        cpu_temperature->status = ERROR_NO_SENSOR;
+        handle_error(__func__,ERROR_NO_SENSOR);
+        return TEMP_SUCCESS;
     }
-    snprintf(cpu_temp.device_name, DEVICE_NAME_MAX_LEN, "%s", device->name);
+    snprintf(cpu_temperature->device_name, DEVICE_NAME_MAX_LEN, "%s", device->name);
 
     // Read data from device
-    cpu_temp.timestamp = ztimer_now(ZTIMER_USEC);
+    cpu_temperature->timestamp = ztimer_now(ZTIMER_USEC);
     if (saul_reg_read(device, &data) < 0) {
-        cpu_temp.status = ERROR_READ_FAIL;
-        return cpu_temp;
+        cpu_temperature->status = ERROR_TEMP_READ_FAIL;
+        handle_error(__func__,ERROR_TEMP_READ_FAIL);
+        return TEMP_SUCCESS;
     }
 
-    cpu_temp.temperature = data.val[0];
-    cpu_temp.scale = data.scale;
-    cpu_temp.status = 0;
+    cpu_temperature->temperature = data.val[0];
+    cpu_temperature->scale = data.scale;
+    cpu_temperature->status = 0;
 
 #endif
 
-    return cpu_temp;
+    return TEMP_SUCCESS;
 }
 
 // Small helper function to determine the divisor
@@ -84,10 +88,7 @@ void cpu_temperature_print(const cpu_temperature_t *temp) {
         printf("[%s] The temperature of %s is %d.%0*d °C\n",
                time_str, temp->device_name, integer_part, (temp->scale < 0 ? -temp->scale : 0), fractional_part);
     } else {
-        // Handle errors
-        const char *error_message = get_error_message(temp->status);
-        printf("[%s] Error: %s (Device: %s)\n",
-               time_str, error_message, temp->device_name);
+        handle_error(__func__,temp->status);
     }
 }
 

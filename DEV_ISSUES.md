@@ -167,6 +167,7 @@ Get the PID (process id) of the application (has to be running):
 ps aux | grep project
 # "project" is the partial name search for the process
 # The number in the second column of the output is the PID
+# USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
 ```
 
 Use `strace` to get the "output" of the process by id:
@@ -376,3 +377,70 @@ A debugging session is active.
 Quit anyway? (y or n) y
 
 ```
+
+## CoAP Request not Send
+
+Using gdb debugging the issue seems to be in gcoap.h:
+```shell
+91	    if (gcoap_req_send(coap_buffer_uint8, pkt->payload_len, &remote, NULL, NULL, (void *)request, GCOAP_SOCKET_TYPE_UDP) < 0) {
+(gdb) step
+gcoap_req_send (buf=0x80863a0 <coap_buffer_uint8> "", len=274, remote=0x808b2a4 <main_stack+10532>, local=0x0, resp_handler=0x0, context=0x808b499 <main_stack+11033>, tl_type=GCOAP_SOCKET_TYPE_UDP)
+    at /home/vincent/Workspace/project-digitalization/RIOT/sys/net/application_layer/gcoap/gcoap.c:1753
+1753	{
+(gdb) n
+1754	    gcoap_socket_t socket = { 0 };
+(gdb) n
+1756	    unsigned msg_type  = (*buf & 0x30) >> 4;
+(gdb) n
+1761	    assert(remote != NULL);
+(gdb) n
+1763	    res = _tl_init_coap_socket(&socket, tl_type);
+(gdb) n
+1764	    if (res < 0) {
+(gdb) n
+1769	    if ((resp_handler != NULL) || (msg_type == COAP_TYPE_CON)) {
+(gdb) n
+1770	        mutex_lock(&_coap_state.lock);
+(gdb) n
+1772	        for (int i = 0; i < CONFIG_GCOAP_REQ_WAITING_MAX; i++) {
+(gdb) n
+1773	            if (_coap_state.open_reqs[i].state == GCOAP_MEMO_UNUSED) {
+(gdb) n
+1774	                memo = &_coap_state.open_reqs[i];
+(gdb) n
+1775	                memo->state = GCOAP_MEMO_WAIT;
+(gdb) n
+1785	        memo->resp_handler = resp_handler;
+(gdb) n
+1786	        memo->context = context;
+(gdb) n
+1787	        memcpy(&memo->remote_ep, remote, sizeof(sock_udp_ep_t));
+(gdb) n
+1788	        memo->socket = socket;
+(gdb) n
+1802	        switch (msg_type) {
+(gdb) n
+1806	            if (len > CONFIG_GCOAP_PDU_BUF_SIZE) {
+(gdb) n
+1808	                memo->state = GCOAP_MEMO_UNUSED;
+(gdb) n
+1809	                mutex_unlock(&_coap_state.lock);
+(gdb) n
+1810	                return -EINVAL;
+(gdb) n
+coap_send_control (argc=2, argv=0x808b5d0 <main_stack+11344>) at /home/vincent/Workspace/project-digitalization/src/cmd_control.c:67
+67	    handle_error(__func__, res);
+(gdb) 
+```
+
+So the issue is the size of the message, which by default is limited by RIOT to `CONFIG_GCOAP_PDU_BUF_SIZE`, which can be found with:
+```shell
+grep CONFIG_GCOAP_PDU_BUF_SIZE $(find RIOT/ -name "*.h")
+# Results:
+#RIOT/sys/include/net/gcoap.h: * gcoap_req_init(&pdu, buf, CONFIG_GCOAP_PDU_BUF_SIZE, COAP_METHOD_GET, NULL);
+#RIOT/sys/include/net/gcoap/dns.h: * @ref CONFIG_GCOAP_PDU_BUF_SIZE and must be a power
+#RIOT/sys/include/net/gcoap.h:#ifndef CONFIG_GCOAP_PDU_BUF_SIZE
+#RIOT/sys/include/net/gcoap.h:#define CONFIG_GCOAP_PDU_BUF_SIZE      (128)
+```
+
+So CONFIG_GCOAP_PDU_BUF_SIZE is 128, which is smaller than COAP_BUF_SIZE which is 287.

@@ -17,19 +17,22 @@ QUIET ?= 1
 
 # Extract values from config.ini
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
-CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini | tr ',' ' ')
-URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
-ADDRESS := $(shell awk -F' = ' '/address/ {print $$2}' config.ini)
-PORT := $(shell awk -F' = ' '/port/ {print $$2}' config.ini)
-ENDPOINT := $(shell awk -F' = ' '/endpoint/ {print $$2}' config.ini)
+TELEGRAM_CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini)
+COAP_SERVER_URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
+COAP_SERVER_ADDRESS := $(shell awk -F' = ' '/address/ {print $$2}' config.ini)
+COAP_SERVER_PORT := $(shell awk -F' = ' '/port/ {print $$2}' config.ini)
+COAP_SERVER_URI_PATH := $(shell awk -F' = ' '/uri_path/ {print $$2}' config.ini)
 
 # Pass values as C macros
 CFLAGS += -DTELEGRAM_BOT_TOKEN=\"$(TELEGRAM_BOT_TOKEN)\"
-CFLAGS += -DCHAT_IDS=\"$(CHAT_IDS)\"
-CFLAGS += -DURL=\"$(URL)\"
-CFLAGS += -DADDRESS\"$(ADDRESS)\"
-CFLAGS += -DPORT\"$(PORT)\"
-CFLAGS += -DENDPOINT\"$(EDNPOINT)\"
+CFLAGS += -DTELEGRAM_CHAT_IDS=\"$(TELEGRAM_CHAT_IDS)\"
+CFLAGS += -DCOAP_SERVER_URL=\"$(COAP_SERVER_URL)\"
+CFLAGS += -DCOAP_SERVER_ADDRESS=\"$(COAP_SERVER_ADDRESS)\"
+CFLAGS += -DCOAP_SERVER_PORT=\"$(COAP_SERVER_PORT)\"
+CFLAGS += -DCOAP_SERVER_URI_PATH=\"$(COAP_SERVER_URI_PATH)\"
+
+# Increase default RIOT CoAP request size limit
+CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512
 
 # RIOT modules
 USEMODULE += shell
@@ -102,7 +105,7 @@ SRC += main.c
 SRC += led_control.c
 SRC += cmd_control.c
 SRC += cpu_temperature.c
-SRC += coap_control.c
+SRC += coap_post.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

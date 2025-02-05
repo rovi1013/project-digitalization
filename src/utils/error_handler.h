@@ -5,15 +5,40 @@
 #ifndef ERROR_HANDLER_H
 #define ERROR_HANDLER_H
 
-// Error codes
-#define ERROR_UNKNOWN -11
-#define ERROR_MEMORY_FAIL -12
-#define ERROR_NO_SENSOR -13
-#define ERROR_READ_FAIL -22
-#define ERROR_INVALID_ARGS -31
-#define ERROR_LED_WRITE -41
+// Define error codes, messages, and type
+#define ERROR_LIST \
+X(COAP_SUCCESS, "CoAP message send successful", "[INFO]") \
+X(COAP_PKT_SUCCESS, "CoAP package created successful", "[INFO]") \
+X(LED_SUCCESS, "LED operation successful", "[INFO]") \
+X(TEMP_SUCCESS, "Temperature operation successful", "[INFO]") \
+X(ERROR_INVALID_ARGUMENT, "Invalid argument provided to function", "[ERROR]") \
+X(ERROR_COAP_INIT, "CoAP packet initialization failed", "[ERROR]") \
+X(ERROR_COAP_URI_PATH, "Unable to append URI path in CoAP request", "[ERROR]") \
+X(ERROR_COAP_PAYLOAD, "Payload appending to CoAP request failed", "[ERROR]") \
+X(ERROR_COAP_TIMEOUT, "CoAP request timeout", "[ERROR]") \
+X(ERROR_IPV6_FORMAT, "Invalid IPv6 address format encountered", "[ERROR]") \
+X(ERROR_COAP_SEND, "CoAP request transmission failed", "[ERROR]") \
+X(ERROR_ALLOC_MEMORY_FAIL, "Memory allocation failure detected", "[ERROR]") \
+X(ERROR_NO_SENSOR, "Sensor not found or unavailable", "[ERROR]") \
+X(ERROR_TEMP_READ_FAIL, "Temperature data read operation failed", "[ERROR]") \
+X(ERROR_LED_WRITE, "Unable to write LED state", "[ERROR]") \
+X(ERROR_NULL_POINTER, "NULL pointer detected in function call", "[ERROR]") \
+X(ERROR_UNKNOWN, "An unknown error occurred", "[ERROR]")
 
-// Return error code
-const char *get_error_message(int error_code);
+// Generate enum values
+typedef enum {
+#define X(code, message, log_level) code,
+    ERROR_LIST
+    #undef X
+} error_code_t;
 
-#endif //ERROR_HANDLER_H
+/**
+ * Handles errors based on the error code.
+ * Logs an appropriate message.
+ * @param function_name Name of the function reporting the error.
+ * @param error_code The error code to handle.
+ */
+void handle_error(const char *function_name, error_code_t error_code);
+
+#endif // ERROR_HANDLER_H
+

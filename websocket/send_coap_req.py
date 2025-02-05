@@ -8,7 +8,7 @@ async def main():
                         help="IP address where the uvicorn server is started (default: 0.0.0.0)")
     parser.add_argument("-m", "--msg", metavar='', type=str, default="test",
                         help="Message to send to telegram")
-    parser.add_argument("-i", "--id", metavar='', type=str, default="7779371199",
+    parser.add_argument("-i", "--id", metavar='', type=str, default="7837794124",
                         help="Chat id of the telegram chat")
     args = parser.parse_args()
     coap_url = args.url
@@ -16,10 +16,10 @@ async def main():
     chat_id = args.id
 
     # The server address and port
-    uri = f"coap://{coap_url}:5683/message"
+    uri = f"coap://[fe80::1]:5683/message"
 
     # The payload as a byte string
-    payload = b"chat_id=" + chat_id.encode("utf-8") + b"&text=" + telegram_msg.encode("utf-8")
+    payload = b"url=https://api.telegram.org/bot&telegram_bot_token=7975746972:AAEJo471A-1vMk76RU0-1HY0epnl0IimtWE&chat_ids=" + chat_id.encode("utf-8") + b"&text=" + telegram_msg.encode("utf-8")
     print(f"The coap message: {payload}")
 
     # Create a CoAP message

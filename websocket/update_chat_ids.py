@@ -3,13 +3,12 @@ import os
 import configparser
 
 # Define paths
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Goes to "project/"
-CONFIG_FILE = os.path.join(BASE_DIR, "src", "config.ini")  # Path to "project/src/config.ini"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Goes to project directory
+CONFIG_FILE = os.path.join(BASE_DIR, "src", "config.ini")  # Path to "src/config.ini"
 
 # Function to load Telegram bot token from config.ini
 def load_telegram_bot_token():
     config = configparser.ConfigParser()
-
     config.read(CONFIG_FILE)
 
     if "telegram" in config and "bot_token" in config["telegram"]:
@@ -42,12 +41,12 @@ def load_existing_chat_ids():
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
 
-    if "chat_ids" in config and "list" in config["chat_ids"]:
-        return set(config["chat_ids"]["list"].split(","))
+    if "telegram" in config and "chat_ids" in config["telegram"]:
+        return set(config["telegram"]["chat_ids"].split(","))
 
     return set()
 
-# Function to update config.ini with new chat IDs
+# Function to update config.ini
 def update_chat_ids():
     bot_token = load_telegram_bot_token()
     new_chat_ids = fetch_chat_ids(bot_token)
@@ -64,11 +63,9 @@ def update_chat_ids():
 
     if "telegram" not in config:
         config["telegram"] = {}
-    config["telegram"]["bot_token"] = bot_token  # Ensure token is preserved
 
-    if "chat_ids" not in config:
-        config["chat_ids"] = {}
-    config["chat_ids"]["list"] = ",".join(sorted(updated_chat_ids))  # Store sorted chat IDs
+    config["telegram"]["bot_token"] = bot_token
+    config["telegram"]["chat_ids"] = ",".join(sorted(updated_chat_ids))
 
     with open(CONFIG_FILE, "w") as configfile:
         config.write(configfile)

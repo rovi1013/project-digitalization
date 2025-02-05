@@ -10,14 +10,14 @@
 #include "cpu_temperature.h"
 #include "cmd_control.h"
 #include "utils/error_handler.h"
-#include "coap_control.h"
+#include "coap_post.h"
 
 // Handle LED control commands
 static int led_control(const int argc, char **argv) {
     if (argc != 3) {
-        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        handle_error(__func__,ERROR_INVALID_ARGUMENT);
         puts("Usage: led <#led> <on/off/brightness>");
-        return ERROR_INVALID_ARGS;
+        return ERROR_INVALID_ARGUMENT;
     }
 
     const uint8_t led_id = atoi(argv[1]);
@@ -29,22 +29,23 @@ static int cpu_temp_control(const int argc, char **argv) {
     (void)argv;
 
     if (argc != 1) {
-        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
+        handle_error(__func__,ERROR_INVALID_ARGUMENT);
         puts("Usage: cpu-temp");
-        return ERROR_INVALID_ARGS;
+        return ERROR_INVALID_ARGUMENT;
     }
 
-    const cpu_temperature_t temp = cpu_temperature_execute();
+    cpu_temperature_t temp;
+    cpu_temperature_get(&temp);
     cpu_temperature_print(&temp);
 
-    return 0;
+    return TEMP_SUCCESS;
 }
 
-static int coap_test_control(const int argc, char **argv) {
-    if (argc != 1) {
-        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
-        puts("Usage: coap-test");
-        return ERROR_INVALID_ARGS;
+static int coap_send_control(const int argc, char **argv) {
+    if (argc != 2) {
+        handle_error(__func__,ERROR_INVALID_ARGUMENT);
+        puts("Usage: coap-test <message>");
+        return ERROR_INVALID_ARGUMENT;
     }
     //char *command = argv[0];
     //char *type = "post";
@@ -58,36 +59,40 @@ static int coap_test_control(const int argc, char **argv) {
     //char *data = "chat_id=7837794124&text=Gute Besserung wünscht dir das nrf52840dk!";
     //char *argvNew[] = {command, type, addr, port, path, data};
     //int argcNew = 6;
-    
-    (void)argv;
-    
-    coap_request_t request = init_coap_request();
 
-    coap_control(argcNew, argvNew);
+    coap_request_t request;
+    init_coap_request(&request);
+    const int res = coap_post_send(&request, argv[1]);
 
+    handle_error(__func__, res);
     return 0;
+
+    //const coap_request_t request = coap_control(argv[1]);
+    //coap_request_t request = init_coap_request();
+    //coap_control(argcNew, argvNew);
+
+    //return 0;
 }
 
-static int coap_post_control(const int argc, char **argv) {
-    if (argc != 2) {
-        printf("Error: %s\n", get_error_message(ERROR_INVALID_ARGS));
-        puts("Usage: coap-post [Nachricht]");
-        return ERROR_INVALID_ARGS;
-    }
-
-    char *command = argv[0];
-    char *
-
-
-    return 0;
-}
+// static int coap_post_control(const int argc, char **argv) {
+//     if (argc != 2) {
+//         handle_error(__func__,ERROR_INVALID_ARGUMENT);
+//         puts("Usage: coap-post [Nachricht]");
+//         return ERROR_INVALID_ARGUMENT;
+//     }
+//
+//     char *command = argv[0];
+//     char *
+//
+//
+//     return 0;
+// }
 
 // Shell commands array
 static const shell_command_t cmd_control_shell_commands[] = {
     { "led", "Control LEDs (e.g., 'led 0 on')", led_control },
     { "cpu-temp", "Get CPU temperature (e.g., 'cpu-temp')", cpu_temp_control },
-    { "coap-test", "Send a custom coap message.", coap_test_control },
-    { "coap-post", "Send a coap message to a target destination", coap_post_control},
+    { "coap-send", "Send a custom coap message.", coap_send_control },
     { NULL, NULL, NULL } // End marker
 };
 

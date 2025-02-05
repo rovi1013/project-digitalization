@@ -14,8 +14,8 @@ set(SOURCE_FILES
         src/utils/timestamp_convert.h
         src/utils/error_handler.c
         src/utils/error_handler.h
-        src/coap_control.c
-        src/coap_control.h
+        src/coap_post.c
+        src/coap_post.h
 )
 
 # Set RIOT OS base directory

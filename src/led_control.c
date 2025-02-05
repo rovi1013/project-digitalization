@@ -27,6 +27,7 @@ static int led_saul_write(const uint8_t led_id, const int16_t value) {
 
     if (!dev) {
         printf("LED with ID %u not found\n", led_id);
+        handle_error(__func__,ERROR_NO_SENSOR);
         return ERROR_NO_SENSOR;
     }
 
@@ -35,12 +36,13 @@ static int led_saul_write(const uint8_t led_id, const int16_t value) {
 
     if (saul_reg_write(dev, &data) < 0) {
         printf("Failed to write to LED with ID %u\n", led_id);
+        handle_error(__func__,ERROR_LED_WRITE);
         return ERROR_LED_WRITE;
     }
 
 #endif
 
-    return 0;
+    return LED_SUCCESS;
 }
 
 // Execute LED actions

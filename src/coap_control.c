@@ -15,6 +15,7 @@
 #include "uri_parser.h"
 #include "net/utils.h"
 #include "fmt.h"
+#include "coap_control.h"
 
 //static bool _proxied = false;
 //static char proxy_uri[64];
@@ -239,7 +240,7 @@ size_t _send(uint8_t *buf, size_t len, char *addr_str, char *port_str, void *ctx
 /* Coap Control */
 int coap_control(int argc, char **argv) {
     char *method_codes[] = {"ping", "get", "post", "put"};
-    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
+    uint8_t buf[COAP_BUF_SIZE];
     coap_pkt_t pdu;
     size_t len;
 
@@ -275,7 +276,7 @@ int coap_control(int argc, char **argv) {
             uri_len = strlen(argv[apos+2]);
         }
 
-        gcoap_req_init(&pdu, &buf[0], CONFIG_GCOAP_PDU_BUF_SIZE, code_pos, uri);
+        gcoap_req_init(&pdu, &buf[0], COAP_BUF_SIZE, code_pos, uri);
         coap_hdr_set_type(pdu.hdr, msg_type);
 
         /* Preperation of the Payload */
@@ -286,8 +287,9 @@ int coap_control(int argc, char **argv) {
 
         size_t paylen = (argc == apos + 4) ? strlen(argv[apos+3]) : 0;
         printf("paylen: %u\n", (unsigned)paylen);
+        printf("pdu.payload_len: %u\n", (unsigned)pdu.payload_len);
         if (paylen) {
-            puts("I entered if paylen");
+            //puts("I entered if paylen");
             coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);
             len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
             if (pdu.payload_len >= paylen) {
@@ -318,9 +320,10 @@ int coap_control(int argc, char **argv) {
     return 0;
 }
 
+/*
 int coap_post(int argc, char **argv) {
     char *method_codes[] = {"ping", "get", "post", "put"};
-    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
+    uint8_t buf[COAP_BUF_SIZE];
     coap_pkt_t pdu;
     size_t len;
     unsigned msg_type = COAP_TYPE_CON;
@@ -329,7 +332,7 @@ int coap_post(int argc, char **argv) {
 
     return 0;
 }
-
+*/
 
 static ssize_t _sending(uint8_t *buf, size_t len, const sock_udp_ep_t *remote,
                      void *ctx, gcoap_socket_type_t tl)

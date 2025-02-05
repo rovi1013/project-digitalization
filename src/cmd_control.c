@@ -55,8 +55,9 @@ static int coap_test_control(const int argc, char **argv) {
     char *addr = "2001:470:7347:c822::1234";
     char *port = "5683";
     char *path = "/message";
-    char *data = "chat_id=7779371199&text=Hello, CoAP!";
+    //char *data = "chat_id=7779371199&text=Hello, CoAP!";
     //char *data = "chat_id=7837794124&text=Gute Besserung wünscht dir das nrf52840dk!";
+    char *data = "url=https://api.telegram.org/bot&token=7975746972:AAEJo471A-1vMk76RU0-1HY0epnl0IimtWE&chat_ids=7779371199&text=test123";
     char *argvNew[] = {command, type, addr, port, path, data};
     int argcNew = 6;
 

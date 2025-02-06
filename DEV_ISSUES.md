@@ -444,3 +444,12 @@ grep CONFIG_GCOAP_PDU_BUF_SIZE $(find RIOT/ -name "*.h")
 ```
 
 So CONFIG_GCOAP_PDU_BUF_SIZE is 128, which is smaller than COAP_BUF_SIZE which is 287.
+
+### Solution: Increase size of CONFIG_GCOAP_PDU_BUF_SIZE
+
+In Makefile:
+```makefile
+CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512
+```
+
+

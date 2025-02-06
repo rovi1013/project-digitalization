@@ -4,64 +4,91 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/src/config.ini"
 UPDATE_SCRIPT="$SCRIPT_DIR/websocket/update_chat_ids.py"
+CHECKS_DONE_FILE="/tmp/build_env_setup_done"
 
 # Define requirements
 REQUIRED_PACKAGES=("git" "gcc-arm-none-eabi" "make" "gcc-multilib" "libstdc++-arm-none-eabi-newlib" "openocd" "gdb-multiarch" "doxygen" "wget" "unzip" "python3-serial")
 INTERFACE="tap0"
 
-# Temporary file to track if check have been run already
-CHECKS_DONE_FILE="/tmp/build_env_setup_done"
+# Default Environment Variables
+BOARD="nrf52840dk"
+ENABLE_CONSOLE_THREAD=0
+VERBOSE=0
+LOG_FILE="build_script.log"
 
-# Function to display help messages
+################################################################################
+##################################### HELP #####################################
+################################################################################
+
+# Function to display the help page
 show_help() {
-    echo "Script to automate the build and flash process of the application."
-    echo "Usage: ./build.sh [option]"
-    echo "Options:"
-    echo "  --help, -h              Show this help message"
-    echo ""
-    echo "  default (no option)     Open build and flash menu"
-    echo "  --term, -t              Build, flash, and open the RIOT-OS terminal"
-    echo "  --native, -n            Build the application for native"
-    echo "  --build-only, -b        Build the firmware without flashing"
-    echo "  --flash-only, -f        Flash the firmware without building (requires finished build)"
-    echo "  --term-only, -T         Only open the RIOT-OS terminal (if the app is running)"
-    echo "  --reset-checks, -r      Force system checks again (next run)"
-}
-
-# Function to display interactive menu
-default_interactive_menu() {
+    clear
     echo "╔═══════════════════════════════════════════════════════════════╗"
-    echo "║  ██████╗  ██╗  ██████╗  ████████╗          ██████╗  ███████╗  ║"
-    echo "║  ██╔══██╗ ██║ ██╔═══██╗ ╚══██╔══╝         ██╔═══██╗ ██╔════╝  ║"
-    echo "║  ██████╔╝ ██║ ██║   ██║    ██║   ███████╗ ██║   ██║ ███████╗  ║"
-    echo "║  ██╔══██╗ ██║ ██║   ██║    ██║   ╚══════╝ ██║   ██║ ╚════██║  ║"
-    echo "║  ██║  ██║ ██║  ██████╔╝    ██║             ██████╔╝ ███████║  ║"
-    echo "║  ╚═╝  ╚═╝ ╚═╝  ╚═════╝     ╚═╝             ╚═════╝  ╚══════╝  ║"
-    echo "║---------------------------------------------------------------║"
-    echo "║       📦 PROJECT 'TEXT YOUR IOT DEVICE' BUILD SYSTEM 📦       ║"
+    echo "║                         ℹ️  HELP PAGE                          ║"
+    echo "╚═══════════════════════════════════════════════════════════════╝"
+
+    echo "This script automates building, flashing, and interacting with"
+    echo "the IoT application. Below are the available options:"
+
+    echo "╔═══════════════════════════════════════════════════════════════╗"
+    printf "║ %-63s ║\n" "1) 🚀 Build and Flash"
+    printf "║    %-58s ║\n" "Compiles and flashes the firmware onto the device."
+    echo "║                                                               ║"
+    printf "║ %-63s ║\n" "2) 🔨 Build Only"
+    printf "║    %-58s ║\n" "Compiles the firmware but does NOT flash it."
+    echo "║                                                               ║"
+    printf "║ %-63s ║\n" "3) 📡 Flash Only"
+    printf "║    %-58s ║\n" "Flashes an already compiled firmware onto the device."
+    printf "║    %-58s ║\n" "Build firmware can be found in src/bin/."
+    echo "║                                                               ║"
+    printf "║ %-64s ║\n" "4) 🖥 Open Terminal"
+    printf "║    %-58s ║\n" "Opens a terminal for serial debugging via 'make term'."
+    echo "║                                                               ║"
+    printf "║ %-63s ║\n" "5) 🔍 Force Re-run of System Checks"
+    printf "║    %-58s ║\n" "Re-run system checks with the next execution."
+    printf "║    %-58s ║\n" "Checks required packages, interfaces, configurations."
+    printf "║    %-58s ║\n" "Unlocks the nRF device and updates chat ids."
+    echo "║                                                               ║"
+    printf "║ %-66s ║\n" "6) ⚙️  Modify Environment Variables"
+    printf "║    %-58s ║\n" "Change BOARD, ENABLE_CONSOLE_THREAD, or VERBOSE mode."
+    echo "║                                                               ║"
+    printf "║ %-66s ║\n" "7) ℹ️  Help Page"
+    printf "║    %-58s ║\n" "Shows this help page explaining all options."
+    echo "║                                                               ║"
+    printf "║ %-62s ║\n" "8) ❌ Exit"
+    printf "║    %-58s ║\n" "Closes the script and exits."
     echo "╚═══════════════════════════════════════════════════════════════╝"
     echo ""
-    echo "Choose an option:"
-    echo "    1) Build and Flash"
-    echo "    2) Build Only"
-    echo "    3) Flash Only"
-    echo "    4) Open Terminal"
-    echo "    5) Run Native"
-    echo "    6) Exit"
-    read -p "Enter your choice: " choice
 
-    case $choice in
-        1) system_checks; unlock_nrf_device; build_firmware; flash_firmware; echo "✅ Build process completed!" ;;
-        2) system_checks; build_firmware; echo "✅ Building only completed!" ;;
-        3) system_checks; unlock_nrf_device; flash_firmware; echo "✅ Flashing only completed!" ;;
-        4) open_terminal ;;
-        5) system_checks; run_native; ;;
-        6) echo "👋 Exiting..."; exit 0 ;;
-        *) echo "❌ Invalid choice! Exiting..."; exit 1 ;;
-    esac
+    return
 }
 
-# Function to check for required packages
+################################################################################
+############################## TERMINAL FUNCTIONS ##############################
+################################################################################
+
+# Function to run a command in a new terminal window
+run_in_terminal() {
+    gnome-terminal -- bash -c "$1; exec bash"
+}
+
+# Function to run a command in the background (non-blocking)
+run_in_background() {
+    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+    if [[ $VERBOSE -eq 1 ]]; then
+        echo "[$TIMESTAMP] Executing: $1"
+        eval "$1"
+    else
+        echo "===================================================" >> "$LOG_FILE"
+        echo "[$TIMESTAMP] Executing: $1" >> "$LOG_FILE"
+        eval "$1" >> "$LOG_FILE" 2>&1 &
+    fi
+}
+
+################################################################################
+################################ SYSTEM CHECKS #################################
+################################################################################
+
 check_packages() {
     echo "🔍 Checking for required packages..."
     MISSING_PACKAGES=()
@@ -81,31 +108,20 @@ check_packages() {
     fi
 }
 
-# Function to check if a tap0 interface is up
+# Function to check if the `tap0` interface is up
 check_interface() {
-    echo "🔍 Checking if interface $INTERFACE is up..."
+    echo "🔍 Checking if network interface $INTERFACE is up..."
 
-    if ip link show "$INTERFACE" &> /dev/null; then
+    if ip link show $INTERFACE &> /dev/null; then
         echo "✅ Interface $INTERFACE is up and running."
     else
         echo "❌ Interface $INTERFACE is DOWN!"
-        echo "🔧 Try running: sudo ip tuntap add dev tap0 mode tap user $(whoami) && sudo ip link set tap0 up"
+        echo "🔧 Run: sudo ip tuntap add dev tap0 mode tap user $(whoami) && sudo ip link set tap0 up"
         exit 1
     fi
 }
 
-# Function to unlock the nrf device with openocd
-unlock_nrf_device() {
-    echo "🔓 Unlocking nRF device..."
-    openocd -c 'interface jlink; transport select swd; source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
-
-    if [ $? -ne 0 ]; then
-            echo "❌ Failed to unlock nRF device!"
-            exit 1
-    fi
-}
-
-# Function to check if config.ini exists, and create a template if missing
+# Function to check if `config.ini` exists
 check_config_file() {
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "❌ Missing config.ini in src/"
@@ -133,16 +149,43 @@ check_config_file() {
         cat <<EOL > "$CONFIG_FILE"
 [telegram]
 bot_token = $BOT_TOKEN
-
-[chat_ids]
-list = $CHAT_IDS
+chat_ids = $CHAT_IDS
 EOL
 
         echo "✅ Config file created at: $CONFIG_FILE"
     fi
 }
 
-# Function to update chat_ids
+# Function to check if the nRF device is locked
+check_if_locked() {
+    OUTPUT=$(openocd -c 'interface jlink; transport select swd; source [find target/nrf52.cfg]' \
+                      -c 'init' -c 'mdw 0x10000000' -c 'shutdown' 2>&1)
+
+    if echo "$OUTPUT" | grep -q "cannot access"; then
+        echo "🔒 nRF device is locked."
+        return 1  # Locked
+    else
+        echo "🔓 nRF device already unlocked."
+        return 0  # Unlocked
+    fi
+}
+
+# Function to unlock the nRF device
+unlock_nrf_device() {
+    echo "🔍 Checking if nRF device is locked..."
+    check_if_locked
+    LOCKED=$?
+
+    if [[ "$LOCKED" -eq 1 ]]; then
+        echo "🔑 Unlocking nRF device..."
+        run_in_background "openocd -c 'interface jlink; transport select swd; source [find target/nrf52.cfg]' \
+                -c 'init' -c 'nrf52_recover' -c 'shutdown'"
+        sleep 3
+        echo "🔓 nRF device unlocked."
+    fi
+}
+
+# Function to update chat IDs
 update_chat_ids() {
     echo "🚀 Updating chat IDs..."
     python3 "$UPDATE_SCRIPT"
@@ -152,40 +195,117 @@ update_chat_ids() {
     fi
 }
 
-# Function build the firmware
-build_firmware() {
-    echo "🔨 Building firmware..."
-    make clean all
-    if [ $? -ne 0 ]; then
-        echo "❌ Build failed! Exiting..."
-        exit 1
+# Function to run system checks
+system_checks() {
+    if [[ -f "$CHECKS_DONE_FILE" ]]; then
+        echo "⚡ Skipping system checks (already completed in this session)."
+        return
+    fi
+
+    check_packages;
+    check_interface;
+    check_config_file;
+    update_chat_ids;
+    unlock_nrf_device;
+    echo "✅ All system checks completed!"
+}
+
+################################################################################
+################################# SCRIPT CONFIG ################################
+################################################################################
+
+# Function to load settings from config.ini
+load_config() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        BOARD=$(awk -F '=' '/^board/ {print $2}' "$CONFIG_FILE" | xargs)
+        ENABLE_CONSOLE_THREAD=$(awk -F '=' '/^enable_console_thread/ {print $2}' "$CONFIG_FILE" | xargs)
+        VERBOSE=$(awk -F '=' '/^verbose/ {print $2}' "$CONFIG_FILE" | xargs)
+
+        # Fallback to defaults if config is malformed
+        [[ -z "$BOARD" ]] && BOARD="nrf52dk"
+        [[ -z "$ENABLE_CONSOLE_THREAD" ]] && ENABLE_CONSOLE_THREAD=0
+        [[ -z "$VERBOSE" ]] && VERBOSE=0
+    else
+        echo "⚠️ Config file not found! Creating default config..."
+        save_config  # Creates a new config.ini file with defaults
     fi
 }
 
-# Function to flash the firmware
-flash_firmware() {
-    echo "📡 Flashing firmware..."
-    make flash
-    if [ $? -ne 0 ]; then
-        echo "❌ Flash failed! Exiting..."
-        exit 1
+# Function to save settings to config.ini
+save_config() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        # Create a temp file to store modified settings
+        awk -v board="$BOARD" \
+            -v enable_console_thread="$ENABLE_CONSOLE_THREAD" \
+            -v verbose="$VERBOSE" \
+            '
+            BEGIN { in_settings = 0 }
+            /^\[settings\]/ { in_settings = 1; print; next }
+            /^\[/ && !/^\[settings\]/ { in_settings = 0 }
+            in_settings && /board *=/ { print "board = " board; next }
+            in_settings && /enable_console_thread *=/ { print "enable_console_thread = " enable_console_thread; next }
+            in_settings && /verbose *=/ { print "verbose = " verbose; next }
+            { print }
+            ' "$CONFIG_FILE" > "$CONFIG_FILE.tmp"
+
+        mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    else
+        echo "⚠️ Config file not found! Creating default config..."
+        cat <<EOL > "$CONFIG_FILE"
+[settings]
+board = $BOARD
+enable_console_thread = $ENABLE_CONSOLE_THREAD
+verbose = $VERBOSE
+EOL
     fi
+
+    echo "✅ Config updated in $CONFIG_FILE"
+}
+
+################################################################################
+############################### APPLICATION LOGIC ##############################
+################################################################################
+
+# Function to build firmware
+build_firmware() {
+    echo "🔨 Building firmware for BOARD=$BOARD..."
+
+    if [[ $VERBOSE -eq 1 ]]; then
+        echo "⏳ Running build process with live output..."
+        make clean all BOARD=$BOARD ENABLE_CONSOLE_THREAD=$ENABLE_CONSOLE_THREAD
+    else
+        run_in_background "make clean all BOARD=$BOARD ENABLE_CONSOLE_THREAD=$ENABLE_CONSOLE_THREAD"
+        BUILD_PID=$!  # Capture the process ID (PID) of the background build
+        echo "✅ Build started in background. Check $LOG_FILE for progress."
+    fi
+}
+
+# Function to flash firmware
+flash_firmware() {
+    echo "🚀 Flashing firmware..."
+    run_in_background "make flash BOARD=$BOARD"
+    if [[ $VERBOSE -ne 1 ]]; then
+        echo "✅ Flash process started in background. Check $LOG_FILE for details."
+    fi
+}
+
+# Function to build and flash firmware
+build_and_flash() {
+    build_firmware
+
+    # If VERBOSE is off
+    if [[ $VERBOSE -eq 0 && -n "$BUILD_PID" ]]; then
+        echo "⏳ Waiting for build process to finish..."
+        wait "$BUILD_PID" # Wait for the build process to complete
+    fi
+
+    flash_firmware
 }
 
 # Function to open the RIOT-OS terminal
 open_terminal() {
     echo "🖥️ Opening RIOT-OS terminal..."
-    make term
-}
-
-# Function to run the application on the BOARD=native
-run_native() {
-    echo "🔨 Building for native..."
-    BOARD=native make clean all term
-    if [ $? -ne 0 ]; then
-        echo "❌ Build failed! Exiting..."
-        exit 1
-    fi
+    run_in_terminal "make term BOARD=$BOARD"
 }
 
 # Function to reset system checks
@@ -194,62 +314,133 @@ reset_checks() {
     echo "✅ System checks will run again on the next execution."
 }
 
-# Run system checks only if this is the first time
-system_checks() {
-    if [ ! -f "$CHECKS_DONE_FILE" ]; then
-        check_packages
-        check_interface
-        check_config_file
-        update_chat_ids
-        touch "$CHECKS_DONE_FILE"
-    else
-        echo "⚡ Skipping system checks (already completed in this session)."
-    fi
+################################################################################
+################################# VISUALIZATION ################################
+################################################################################
+
+# Function to modify environment variables
+set_env_variables() {
+    while true; do
+        clear
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        echo "║                🔧 MODIFY ENVIRONMENT VARIABLES                ║"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
+        echo ""
+
+        # Display Current Environment Variables
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        printf "║  📌 BOARD: %-50s ║\n" "$BOARD"
+        printf "║  ⚙️  ENABLE_CONSOLE_THREAD: %-34s ║\n" "$([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+        printf "║  📝 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
+        echo ""
+
+        # Display Options
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        printf "║ %-64s ║\n" "1) 🛠 Change BOARD"
+        printf "║ %-63s ║\n" "2) 🔄 Toggle ENABLE_CONSOLE_THREAD"
+        printf "║ %-63s ║\n" "3) 📢 Toggle VERBOSE MODE"
+        printf "║ %-66s ║\n" "4) ⬅️  Return to Main Menu"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
+        echo ""
+
+        read -p "🎯 Select an option: " env_choice
+        BUILD_NEEDED=0  # Flag to check if a rebuild is needed
+
+        case $env_choice in
+            1)
+                read -p "✏️  Enter new BOARD value (e.g., native, nrf52840dk): " new_board
+                if [[ -n "$new_board" && "$new_board" != "$BOARD" ]]; then
+                    BOARD="$new_board"
+                    echo "✅ BOARD changed to $BOARD"
+                    BUILD_NEEDED=1  # Mark build as needed
+                else
+                    echo "❌ No change. Keeping BOARD=$BOARD"
+                fi
+                ;;
+            2)
+                ENABLE_CONSOLE_THREAD=$((1 - ENABLE_CONSOLE_THREAD))
+                echo "✅ ENABLE_CONSOLE_THREAD toggled to $([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+                BUILD_NEEDED=1  # Mark build as needed
+                ;;
+            3)
+                VERBOSE=$((1 - VERBOSE))
+                echo "✅ VERBOSE MODE toggled to $([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
+                save_config
+                ;;
+            4)
+                return
+                ;;
+            *)
+                echo "❌ Invalid choice! Try again."
+                ;;
+        esac
+
+        # If an environment variable changed, trigger a new build
+        if [[ $BUILD_NEEDED -eq 1 ]]; then
+            echo ""
+            echo "🔄 Environment variables changed. Starting a new build..."
+            reset_checks
+            build_firmware
+            echo "✅ Build completed!"
+            save_config
+        fi
+
+        read -p "Press Enter to continue..."
+    done
 }
 
-# Default behavior: build and flash
-case "$1" in
-    --help|-h)
-        show_help
-        exit 0
-        ;;
-    --term|-t)
-        system_checks
-        unlock_nrf_device
-        build_firmware
-        flash_firmware
-        echo "✅ Build process completed!"
-        open_terminal
-        exit 0
-        ;;
-    --flash-only|-f)
-        system_checks
-        unlock_nrf_device
-        flash_firmware
-        echo "✅ Flashing only completed!"
-        exit 0
-        ;;
-    --build-only|-b)
-        system_checks
-        build_firmware
-        echo "✅ Building only completed!"
-        exit 0
-        ;;
-    --term-only|-T)
-        open_terminal
-        exit 0
-        ;;
-    --reset-checks|-r)
-        reset_checks
-        exit 0
-        ;;
-    --native|-n)
-        system_checks
-        run_native
-        exit 0
-        ;;
-    *)
-        default_interactive_menu
-        exit 0
-        ;;
-esac
+load_config
+
+# Persistent Interactive Menu
+while true; do
+    clear
+    echo "╔═══════════════════════════════════════════════════════════════╗"
+    echo "║  ██████╗  ██╗  ██████╗  ████████╗          ██████╗  ███████╗  ║"
+    echo "║  ██╔══██╗ ██║ ██╔═══██╗ ╚══██╔══╝         ██╔═══██╗ ██╔════╝  ║"
+    echo "║  ██████╔╝ ██║ ██║   ██║    ██║   ███████╗ ██║   ██║ ███████╗  ║"
+    echo "║  ██╔══██╗ ██║ ██║   ██║    ██║   ╚══════╝ ██║   ██║ ╚════██║  ║"
+    echo "║  ██║  ██║ ██║  ██████╔╝    ██║             ██████╔╝ ███████║  ║"
+    echo "║  ╚═╝  ╚═╝ ╚═╝  ╚═════╝     ╚═╝             ╚═════╝  ╚══════╝  ║"
+    echo "║---------------------------------------------------------------║"
+    echo "║       📦 PROJECT 'TEXT YOUR IOT DEVICE' BUILD SYSTEM 📦       ║"
+    echo "╚═══════════════════════════════════════════════════════════════╝"
+
+    # Display Environment Variables
+    echo "╔═══════════════════════════════════════════════════════════════╗"
+    printf "║  🌍 ENVIRONMENT SETTINGS                                      ║\n"
+    echo "║---------------------------------------------------------------║"
+    printf "║  📌 BOARD: %-50s ║\n" "$BOARD"
+    printf "║  ⚙️  ENABLE_CONSOLE_THREAD: %-34s ║\n" "$([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+    printf "║  📝 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
+    echo "╚═══════════════════════════════════════════════════════════════╝"
+
+    # Menu Options
+    echo "╔═══════════════════════════════════════════════════════════════╗"
+    printf "║ %-63s ║\n" "1) 🚀 Build and Flash"
+    printf "║ %-63s ║\n" "2) 🔨 Build Only"
+    printf "║ %-63s ║\n" "3) 📡 Flash Only"
+    printf "║ %-64s ║\n" "4) 🖥  Open Terminal"
+    printf "║ %-66s ║\n" "5) ⚙️  Modify Environment Variables"
+    printf "║ %-63s ║\n" "6) 🔍 Force Re-run of System Checks"
+    printf "║ %-66s ║\n" "7) ℹ️  Help Page"
+    printf "║ %-62s ║\n" "8) ❌ Exit"
+    echo "╚═══════════════════════════════════════════════════════════════╝"
+    echo ""
+
+    # Process User Input
+    read -p "🎯 Select an option: " choice
+
+    case $choice in
+        1) system_checks; build_and_flash ;;
+        2) system_checks; build_firmware ;;
+        3) system_checks; flash_firmware ;;
+        4) open_terminal ;;
+        5) set_env_variables ;;
+        6) reset_checks ;;
+        7) show_help ;;
+        8) echo "👋 Exiting..."; exit 0 ;;
+        *) echo "❌ Invalid choice! Try again." ;;
+    esac
+    read -p "Press Enter to continue..."
+done

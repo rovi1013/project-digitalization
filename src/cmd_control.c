@@ -34,9 +34,11 @@ static int cpu_temp_control(const int argc, char **argv) {
         return ERROR_INVALID_ARGUMENT;
     }
 
+    char buffer_temp[CLASS_CMD_BUFFER_SIZE];
     cpu_temperature_t temp;
     cpu_temperature_get(&temp);
-    cpu_temperature_print(&temp);
+    cpu_temperature_formatter(&temp, CALL_FROM_CLASS_CMD, buffer_temp, CLASS_CMD_BUFFER_SIZE);
+    puts(buffer_temp);
 
     return TEMP_SUCCESS;
 }
@@ -47,18 +49,6 @@ static int coap_send_control(const int argc, char **argv) {
         puts("Usage: coap-test <message>");
         return ERROR_INVALID_ARGUMENT;
     }
-    //char *command = argv[0];
-    //char *type = "post";
-    //char *addr = "fe80::a41d:b3f5:5212:392f";
-    //char *addr = "fe80::6b96:48d0:4a13:27f5";
-    //char *addr = "fe80::a74:adc8:de28:e5a6";
-    //char *addr = "2001:470:7347:c822::1234";
-    //char *port = "5683";
-    //char *path = "/message";
-    //char *data = "chat_ids=7779371199&text=Hello, CoAP!&token=";
-    //char *data = "chat_id=7837794124&text=Gute Besserung wünscht dir das nrf52840dk!";
-    //char *argvNew[] = {command, type, addr, port, path, data};
-    //int argcNew = 6;
 
     coap_request_t request;
     init_coap_request(&request);
@@ -66,27 +56,7 @@ static int coap_send_control(const int argc, char **argv) {
 
     handle_error(__func__, res);
     return 0;
-
-    //const coap_request_t request = coap_control(argv[1]);
-    //coap_request_t request = init_coap_request();
-    //coap_control(argcNew, argvNew);
-
-    //return 0;
 }
-
-// static int coap_post_control(const int argc, char **argv) {
-//     if (argc != 2) {
-//         handle_error(__func__,ERROR_INVALID_ARGUMENT);
-//         puts("Usage: coap-post [Nachricht]");
-//         return ERROR_INVALID_ARGUMENT;
-//     }
-//
-//     char *command = argv[0];
-//     char *
-//
-//
-//     return 0;
-// }
 
 // Shell commands array
 static const shell_command_t cmd_control_shell_commands[] = {

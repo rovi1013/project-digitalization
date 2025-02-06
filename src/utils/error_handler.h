@@ -23,6 +23,7 @@ X(ERROR_NO_SENSOR, "Sensor not found or unavailable", "[ERROR]") \
 X(ERROR_TEMP_READ_FAIL, "Temperature data read operation failed", "[ERROR]") \
 X(ERROR_LED_WRITE, "Unable to write LED state", "[ERROR]") \
 X(ERROR_NULL_POINTER, "NULL pointer detected in function call", "[ERROR]") \
+X(ERROR_CALLER_UNKNOWN, "Unknown caller function", "[ERROR]") \
 X(ERROR_UNKNOWN, "An unknown error occurred", "[ERROR]")
 
 // Generate enum values
@@ -39,6 +40,12 @@ typedef enum {
  * @param error_code The error code to handle.
  */
 void handle_error(const char *function_name, error_code_t error_code);
+
+/**
+ * Simple command to get the last error message
+ * @return Last error message
+ */
+int get_last_error(void);
 
 #endif // ERROR_HANDLER_H
 

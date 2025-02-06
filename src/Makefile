@@ -4,9 +4,6 @@ APPLICATION = project-digitalization
 # If no BOARD is found in the environment, use this default:
 BOARD ?= nrf52840dk
 
-# If 1, console is launched in parallel to the coap-loop
-CONSOLE_USE ?= 1
-
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../RIOT
 
@@ -17,6 +14,10 @@ DEVELHELP ?= 1
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
+
+# Flag to manage the console thread execution, set to 1 to enable, 0 to disable
+ENABLE_CONSOLE_THREAD ?= 1
+CFLAGS += -DENABLE_CONSOLE_THREAD=$(ENABLE_CONSOLE_THREAD)
 
 # Extract values from config.ini
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)

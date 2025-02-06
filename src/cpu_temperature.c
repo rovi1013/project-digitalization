@@ -74,7 +74,7 @@ int determine_divisor(const int8_t scale) {
 }
 
 // Print the CPU temperature
-void cpu_temperature_print(const cpu_temperature_t *temp) {
+void cpu_temperature_formatter(const cpu_temperature_t *temp, const caller_class_t caller_class, char *buffer, const size_t buffer_size) {
     char time_str[9];
     format_timestamp(temp->timestamp, time_str, sizeof(time_str));
 
@@ -84,9 +84,21 @@ void cpu_temperature_print(const cpu_temperature_t *temp) {
     const int fractional_part = temp->temperature % divisor;
 
     if (temp->status == 0) {
-        // Print temperature and device info
-        printf("[%s] The temperature of %s is %d.%0*d °C\n",
-               time_str, temp->device_name, integer_part, (temp->scale < 0 ? -temp->scale : 0), fractional_part);
+        switch (caller_class) {
+            case CALL_FROM_CLASS_CMD:
+                // Print temperature and device info
+                snprintf(buffer, buffer_size, "[%s] The temperature of %s is %d.%0*d °C\n",
+                        time_str, temp->device_name, integer_part,
+                        (temp->scale < 0 ? -temp->scale : 0), fractional_part);
+                break;
+            case CALL_FROM_CLASS_COAP:
+                // Print temperature only
+                snprintf(buffer, buffer_size, "CPU Temperature: %d.%0*d °C\n",
+                        integer_part, (temp->scale < 0 ? -temp->scale : 0), fractional_part);
+                break;
+            default:
+                handle_error(__func__, ERROR_CALLER_UNKNOWN);
+        }
     } else {
         handle_error(__func__,temp->status);
     }

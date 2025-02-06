@@ -14,6 +14,8 @@ typedef struct {
     const char *log_level;
 } error_entry_t;
 
+static int last_error = 0;
+
 static const error_entry_t error_table[] = {
 #define X(code, message, log_level) { code, message, log_level },
     ERROR_LIST
@@ -32,7 +34,11 @@ const error_entry_t *get_error_entry(const error_code_t error_code) {
 
 // Error handler
 void handle_error(const char *function_name, const error_code_t error_code) {
+    last_error = error_code;
     const error_entry_t *entry = get_error_entry(error_code);
     fprintf(stderr, "%s %s: %s\n", entry->log_level, function_name, entry->message);
 }
 
+int get_last_error(void) {
+    return last_error;
+}

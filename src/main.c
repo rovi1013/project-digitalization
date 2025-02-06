@@ -14,63 +14,64 @@
 #include "thread.h"
 #include "utils/error_handler.h"
 
+#ifdef BOARD_NATIVE
+#define THREAD_STACK_SIZE (4096)
+#else
+#define THREAD_STACK_SIZE (2048)
+#endif
+
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
-char rcv_thread_stack[THREAD_STACKSIZE_MAIN];
+char coap_thread_stack[THREAD_STACK_SIZE];
+#if ENABLE_CONSOLE_THREAD == 1
+char console_thread_stack[THREAD_STACK_SIZE];
+#endif
 
 void *coap_thread(void *arg) {
     (void) arg;
-    while (true) {
-        printf("Ich fange an\n");
+    while (1) {
+        char buffer_temp[CLASS_COAP_BUFFER_SIZE];
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
-
-        char str[10];
-        sprintf(str, "%d", temp.temperature);
+        cpu_temperature_formatter(&temp, CALL_FROM_CLASS_COAP, buffer_temp, CLASS_COAP_BUFFER_SIZE);
 
         coap_request_t request;
         init_coap_request(&request);
-        const int res = coap_post_send(&request, str);
+        const int res = coap_post_send(&request, buffer_temp);
 
         handle_error(__func__, res);
 
-        printf("Ich schlafe jetzt\n");
-        ztimer_sleep(ZTIMER_SEC, 60);
-        printf("ich bin aufgewacht\n");
+        ztimer_sleep(ZTIMER_MSEC, 60000);
     }
-
     return NULL;
 }
 
+#if ENABLE_CONSOLE_THREAD == 1
 void *console_thread(void *arg) {
     (void) arg;
     cmd_control_init();
     return NULL;
 }
+#endif
+
 int main(void) {
     // Initialize devices
     led_control_init();
     cpu_temperature_init();
 
-    // Initialize default networking
+    // Initialize thread message queue
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
-    // Thread #1 {
-    thread_create(rcv_thread_stack, sizeof(rcv_thread_stack),
-        THREAD_PRIORITY_MAIN -1, 0,
-        coap_thread, NULL, "coap_thread");
-
+    // Thread #1
+    thread_create(coap_thread_stack, THREAD_STACK_SIZE,
+        7, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
 
     // Thread #2:
-    thread_create(rcv_thread_stack, sizeof(rcv_thread_stack),
-        THREAD_PRIORITY_MAIN -1, 0,
-        console_thread, NULL, "console_thread");
-
-    // Keep both threads running
-    while (1) {
-        thread_yield();
-    }
+#if ENABLE_CONSOLE_THREAD == 1
+    thread_create(console_thread_stack, THREAD_STACK_SIZE,
+        7, THREAD_CREATE_STACKTEST, console_thread, NULL, "ConsoleThread");
+#endif
 
     return 0;
 }

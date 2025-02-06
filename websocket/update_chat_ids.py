@@ -52,7 +52,7 @@ def update_chat_ids():
     new_chat_ids = fetch_chat_ids(bot_token)
 
     if not new_chat_ids:
-        print("ℹ️ No new chat IDs found.")
+        print("ℹ️  No new chat IDs found.")
         return
 
     existing_chat_ids = load_existing_chat_ids()

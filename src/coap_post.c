@@ -46,15 +46,6 @@ void init_coap_request(coap_request_t *request) {
 static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pkt, const sock_udp_ep_t *remote) {
     (void)remote;
 
-    printf("test");
-
-    // Print Response Code
-    char *class_str = (coap_get_code_class(pkt) == COAP_CLASS_SUCCESS)
-                            ? "Success" : "Error";
-    printf("coap_post: response %s, code %1u.%02u", class_str,
-                                                coap_get_code_class(pkt),
-                                                coap_get_code_detail(pkt));
-
     // Get the context
     coap_request_context_t *req_ctx = (coap_request_context_t *)memo->context;
     if (!req_ctx) {
@@ -158,7 +149,7 @@ static int coap_send_request(const coap_pkt_t *pkt, const coap_request_t *reques
     }
     remote.netif = SOCK_ADDR_ANY_NETIF;
     remote.port = atoi(request->port);
-    printf("Adressformatierung erfolgt\n");
+
     // Send the CoAP request
     coap_request_context_t req_ctx;
     req_ctx.message_id = pkt->hdr->id;
@@ -173,9 +164,9 @@ static int coap_send_request(const coap_pkt_t *pkt, const coap_request_t *reques
         (void *)&req_ctx,
         GCOAP_SOCKET_TYPE_UDP
     );
-    printf("gcoap versendet\n");
-    printf("coap_response: %u\n", coap_response);
-    if (coap_response <= 0) {
+
+    const int err = get_last_error();
+    if (coap_response <= 0 || err == ERROR_COAP_SEND || err == ERROR_COAP_TIMEOUT || err == ERROR_NULL_POINTER) {
         return ERROR_COAP_SEND;
     }
 
@@ -194,20 +185,21 @@ int coap_post_send(coap_request_t *request, const char *message) {
 
     char uri_path[URI_PATH_LENGTH + 1];
     char payload[COAP_BUF_SIZE];
-    printf("Step 1\n");
+
     // Step 1: Build URI Path
     snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", request->uri_path);
-    printf("Step 2\n");
+
     // Step 2: Build Payload
     snprintf(payload, sizeof(payload), "url=%s&token=%s&chat_ids=%s&text=%s",
              request->url, request->telegram_bot_token, request->chat_ids, message);
-    printf("Step 3\n");
+
     // Step 3: Prepare CoAP Packet
     coap_pkt_t pkt;
     if (coap_prepare_packet(&pkt, uri_path, payload) != COAP_PKT_SUCCESS) {
         return ERROR_COAP_INIT;
     }
-    printf("Step 4\n");
+    handle_error(__func__, COAP_PKT_SUCCESS);
+
     // Step 4: Send Request
     return coap_send_request(&pkt, request);
 }

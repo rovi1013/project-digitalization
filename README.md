@@ -314,7 +314,7 @@ docker run --rm -it \
 Dive [Documentation](https://github.com/wagoodman/dive).
 
 
-## Border Router Setup
+## Networking / Border Router Setup
 
 The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
 usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For 
@@ -382,7 +382,7 @@ ssh riot@192.168.0.213
 ```
 5. If you are in the correct place your console should look like this:
 ```shell
-riot@6lbr-3:~ $
+riot@6lbr-8:~ $
 ```
 6. Get the border router setup from RIOT:
 ```shell
@@ -414,7 +414,7 @@ sudo nmap -sn 192.168.0.1/24
 
 ssh to device -> authenticate with username and password
 
-riot@6lbr-3
+riot@6lbr-8
 
 (maybe important?):
 install kea on raspberry-pi (sudo apt install kea)
@@ -460,7 +460,7 @@ time you want to use the border router. **This section requires the [Raspberry-P
 ```shell
 ssh riot@<network-ip-addr>
 ```
-2. In the raspberry-pi shell (riot@6lbr-3) navigate to the gnrc_border_router directory:
+2. In the raspberry-pi shell (riot@6lbr-8) navigate to the gnrc_border_router directory:
 ```shell
 cd ~/AllRIOT/examples/gnrc_border_router
 ```
@@ -543,6 +543,58 @@ ping <border-router-ip-address>
 ping 2001:470:7347:c318:e476:a9b:e259:a63e
 ```
 
+### Raspberry-PI Configuration
+
+Install python dependencies on rapsberry-pi (virtual python env has to be in .venv):
+```shell
+cd project-digitalization/websocket
+python -m 'venv' .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Modify mode to make sure user 'riot' can execute python script:
+```shell
+sudo chown -R riot:riot coap_websocket.py
+sudo chmod -R u+rwx coap_websocket.py
+```
+
+Autorun with coap_websocket.service, placed in /etc/systemd/system/. Setup:
+```shell
+# Enable Service
+sudo systemctl daemon-reload
+sudo systemctl enable coap_server.service
+# Start Service
+sudo systemctl start coap_server.service
+# Check Service Status
+sudo systemctl status coap_server.service
+# Stop or Restart Service
+sudo systemctl stop coap_server.service
+sudo systemctl restart coap_server.service
+```
+
+Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (reservations):
+```ini
+"subnet6": [
+        {
+	    "interface": "usb0",
+            "subnet": "2001:470:7347:c810::/60",
+            "pools": [ { "pool": "2001:470:7347:c811::1/64" } ],
+            "pd-pools": [
+                {
+                    "prefix": "2001:470:7347:c818::",
+                    "prefix-len": 61,
+                    "delegated-len": 64
+                }
+            ],
+            reservations: [
+                {
+                    "hw-address": "6e:0d:84:59:e0:9b",
+                    "ip-address": "2001:470:7347:c822::1234"
+                }
+            ]
+	},
+```
 
 <!---
 

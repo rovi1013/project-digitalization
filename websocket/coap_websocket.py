@@ -63,6 +63,12 @@ class CoAPResource(resource.Resource):
                 payload=f"Internal server error: {str(e)}".encode("utf-8"),
             )
 
+async def heartbeat():
+    """Periodically logs an INFO message every 1 minute to confirm the server is running."""
+    while True:
+        logging.info("Server is still running...")
+        await asyncio.sleep(60)
+
 async def coap_server():
     """Start CoAP server on COAP_SERVER_IP."""
     logging.info(f"Starting CoAP server on coap://[{coap_server_ip}]:5683")
@@ -71,8 +77,10 @@ async def coap_server():
     root.add_resource(('.well-known/core',), resource.WKCResource(root.get_resources_as_linkheader))
     root.add_resource(('message',), CoAPResource())
 
-    await aiocoap.Context.create_server_context(root, bind=(coap_server_ip, 5683))
-    await asyncio.get_running_loop().create_future()
+    await asyncio.gather(
+        aiocoap.Context.create_server_context(root, bind=(coap_server_ip, 5683)),
+        heartbeat()
+    )
 
 
 if __name__ == "__main__":

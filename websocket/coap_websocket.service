@@ -3,13 +3,12 @@ Description=CoAP Server Auto-start
 After=network.target
 
 [Service]
-WorkingDirectory=/home/rpi.../project-digitalization/webserver
-Environment="COAP_SERVER_IP=fe80::a41d:b3f5:5212:392f"
+WorkingDirectory=/home/riot/project-digitalization/websocket
+Environment="COAP_SERVER_IP=2001:470:7347:c822::1234"
 Environment="PYTHONUNBUFFERED=1"
-Environment="VIRTUAL_ENV=/home/rpi.../project-digitalization/webserver/.venv"
-ExecStart=/bin/bash -c '$VIRTUAL_ENV/bin/python /home/rpi.../project-digitalization/webserver/coap_websocket.py'
+ExecStart=/bin/bash -c '/home/riot/project-digitalization/websocket/.venv/bin/python /home/riot/project-digitalization/websocket/coap_websocket.py'
 Restart=always
-User=pi
+User=riot
 
 [Install]
 WantedBy=multi-user.target

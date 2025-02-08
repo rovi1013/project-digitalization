@@ -4,7 +4,7 @@ import logging
 
 import aiocoap
 import httpx
-from aiocoap import resource, Message, Code, Type
+from aiocoap import Context, resource, Message, Code, Type
 
 # Configure logging
 LOG_FILE = os.path.join(os.path.dirname(__file__), "coap_server.log")
@@ -26,6 +26,10 @@ import asyncio
 class CoAPResource(resource.Resource):
     """CoAP Resource to handle POST requests"""
 
+    def __init__(self, server_context):
+        super().__init__()
+        self.server_context = server_context
+
     async def send_telegram_messages(self, telegram_api_url, chat_ids_list, text):
         """Send messages asynchronously to prevent CoAP delays"""
         async with httpx.AsyncClient() as client:
@@ -43,7 +47,7 @@ class CoAPResource(resource.Resource):
         try:
             if request.mtype == Type.CON:
                 ack = Message(code=Code.EMPTY, mtype=Type.ACK, mid=request.mid)
-                await request.reply(ack)
+                await self.server_context.send_message(ack, request.remote)
 
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
@@ -84,14 +88,13 @@ async def coap_server():
     logging.info(f"Starting CoAP server on coap://[{coap_server_ip}]:5683")
 
     root = resource.Site()
-    root.add_resource(('.well-known/core',), resource.WKCResource(root.get_resources_as_linkheader))
-    root.add_resource(('message',), CoAPResource())
+    server_context = await aiocoap.Context.create_server_context(root, bind=(coap_server_ip, 5683))
+    root.add_resource(('message',), CoAPResource(server_context))
 
     await asyncio.gather(
-        aiocoap.Context.create_server_context(root, bind=(coap_server_ip, 5683)),
+        server_context,
         heartbeat()
     )
-
 
 if __name__ == "__main__":
     logging.info("Starting CoAP server script...")

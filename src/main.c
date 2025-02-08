@@ -64,7 +64,7 @@ void *coap_thread(void *arg) {
         uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time
         printf("CoAP thread running. Elapsed time: %lu ms\n", (unsigned long)elapsed_time);
 
-        ztimer_sleep(ZTIMER_MSEC, 10000);
+        ztimer_sleep(ZTIMER_MSEC, 60000);
     }
     return NULL;
 }

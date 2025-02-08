@@ -30,7 +30,7 @@ class CoAPResource(resource.Resource):
             # Step 1: If the request is Confirmable (CON), send an immediate ACK
             if request.mtype == Type.CON:
                 logging.info("Received CON request, sending ACK")
-                ack = Message(code=Code.EMPTY, mtype=Type.ACK, mid=request.mid)
+                ack = Message(code=Code.EMPTY, mtype=Type.ACK)
                 return ack
 
             # Step 2: Process the request

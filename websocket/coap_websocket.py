@@ -1,10 +1,10 @@
 import asyncio
-import logging
 import os
+import logging
 
 import aiocoap
 import httpx
-from aiocoap import resource, Message, Code, Type
+from aiocoap import resource, Code
 
 # Configure logging
 LOG_FILE = os.path.join(os.path.dirname(__file__), "coap_server.log")
@@ -21,19 +21,11 @@ logging.basicConfig(
 coap_server_ip = os.getenv("COAP_SERVER_IP", "::1")  # Default to localhost (::1) if unset
 logging.info(f"Using CoAP server IP: {coap_server_ip}")
 
-
 class CoAPResource(resource.Resource):
     """CoAP Resource to handle POST requests"""
 
     async def render_post(self, request):
         try:
-            # Step 1: If the request is Confirmable (CON), send an immediate ACK
-            if request.mtype == Type.CON:
-                logging.info("Received CON request, sending ACK")
-                ack = Message(code=Code.EMPTY, mtype=Type.ACK)
-                return ack
-
-            # Step 2: Process the request
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
@@ -44,46 +36,38 @@ class CoAPResource(resource.Resource):
 
             if not telegram_api_url or not telegram_bot_token or not chat_ids or not text:
                 logging.error("Missing required fields in request")
-                return Message(code=Code.BAD_REQUEST, payload=b"Missing required fields")
+                logging.error(f"url='{telegram_api_url}', bot_token={telegram_bot_token}, chat_ids={chat_ids}, text='{text}'")
+                return aiocoap.Message(code=Code.BAD_REQUEST, payload=b"Missing required fields")
 
             logging.info(f"Received message request: url='{telegram_api_url}', bot_token={telegram_bot_token}, chat_ids={chat_ids}, text='{text}'")
-
             telegram_api_url = f"{telegram_api_url}{telegram_bot_token}"
             chat_ids_list = chat_ids.split(",")
 
-            # Step 3: Process Telegram API call in the background
-            asyncio.create_task(self.send_telegram_messages(telegram_api_url, chat_ids_list, text))
+            async with httpx.AsyncClient() as client:
+                for chat_id in chat_ids_list:
+                    response = await client.post(
+                        f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id.strip(), "text": text}
+                    )
 
-            # Step 4: Send an immediate CoAP response to the client
-            return Message(code=Code.CONTENT, payload=b"Request received, processing in background")
+                    if response.status_code == 200:
+                        logging.info(f"Message sent to {chat_id}")
+                    else:
+                        logging.error(f"Telegram API error for {chat_id}: {response.text}")
+
+            return aiocoap.Message(code=Code.CONTENT, payload=b"Messages sent successfully")
 
         except Exception as e:
             logging.exception("Exception occurred while processing request")
-            return Message(
+            return aiocoap.Message(
                 code=Code.INTERNAL_SERVER_ERROR,
                 payload=f"Internal server error: {str(e)}".encode("utf-8"),
             )
-
-    async def send_telegram_messages(self, telegram_api_url, chat_ids_list, text):
-        """Send messages asynchronously to prevent blocking CoAP responses"""
-        async with httpx.AsyncClient() as client:
-            for chat_id in chat_ids_list:
-                response = await client.post(
-                    f"{telegram_api_url}/sendMessage", json={"chat_id": chat_id.strip(), "text": text}
-                )
-
-                if response.status_code == 200:
-                    logging.info(f"Message sent to {chat_id}")
-                else:
-                    logging.error(f"Telegram API error for {chat_id}: {response.text}")
-
 
 async def heartbeat():
     """Periodically logs an INFO message every 1 minute to confirm the server is running."""
     while True:
         logging.info("Server is still running...")
         await asyncio.sleep(60)
-
 
 async def coap_server():
     """Start CoAP server on COAP_SERVER_IP."""

@@ -5,6 +5,8 @@
 #ifndef COAP_POST_H
 #define COAP_POST_H
 
+#include <stdbool.h>
+
 #define URL_LENGTH 35
 #define ADDRESS_LENGTH 45
 #define PORT_LENGTH 5
@@ -44,6 +46,8 @@ typedef struct {
     uint16_t message_id;                            /**< Message ID of a request */
     const char *uri_path;                           /**< Pointer to the URI path of a request */
 } coap_request_context_t;
+
+extern volatile bool coap_response_status;
 
 /**
  * Init a coap_request_t struct with information and data

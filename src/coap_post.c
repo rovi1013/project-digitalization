@@ -13,6 +13,7 @@
 #include "utils/error_handler.h"
 
 static coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
+volatile bool coap_response_status = false;
 
 /**
  * Initialize the CoAP request
@@ -45,6 +46,7 @@ void init_coap_request(coap_request_t *request) {
  */
 static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pkt, const sock_udp_ep_t *remote) {
     (void)remote;
+    coap_response_status = false;
 
     // Get the context
     coap_request_context_t *req_ctx = (coap_request_context_t *)memo->context;
@@ -65,6 +67,8 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         if (pkt->hdr->code == COAP_CODE_EMPTY) {
             return;
         }
+        coap_response_status = true;
+        return;
     }
 
     // Blockwise response handling
@@ -80,7 +84,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
                 req_ctx->uri_path
             );
 
-            coap_hdr_set_type(next_block_pkt.hdr, COAP_TYPE_CON);
+            coap_hdr_set_type(next_block_pkt.hdr, COAP_TYPE_NON);
             coap_opt_add_block2_control(&next_block_pkt, &block);
 
             sock_udp_ep_t response_target = *remote;
@@ -99,6 +103,8 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
             }
         }
     }
+
+    coap_response_status = true;
 }
 
 /**
@@ -178,6 +184,8 @@ static int coap_send_request(const coap_pkt_t *pkt, const coap_request_t *reques
  * Sends the message.
  */
 int coap_post_send(coap_request_t *request, const char *message) {
+    coap_response_status = false;
+
     if (!request || !message) {
         handle_error(__func__,ERROR_INVALID_ARGUMENT);
         return ERROR_INVALID_ARGUMENT;

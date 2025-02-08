@@ -3,6 +3,7 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ztimer.h>
 
 #include "msg.h"
@@ -42,17 +43,23 @@ void *coap_thread(void *arg) {
 
         coap_request_t request;
         init_coap_request(&request);
+        coap_response_status = false;
         const int res = coap_post_send(&request, buffer_temp);
 
         handle_error(__func__, res);
 
         if (res == COAP_SUCCESS) {
             led_control_execute(0,"on");
-            ztimer_sleep(ZTIMER_MSEC, 500);
+            uint32_t wait_time = 5000;  // Max wait time
+            while (!coap_response_status && wait_time > 0) {
+                ztimer_sleep(ZTIMER_MSEC, 100);
+                wait_time -= 100;
+            }
+
             led_control_execute(0,"off");
         }
 
-        ztimer_sleep(ZTIMER_MSEC, 60000);
+        ztimer_sleep(ZTIMER_MSEC, 10000);
     }
     return NULL;
 }
@@ -67,7 +74,7 @@ void *console_thread(void *arg) {
 #endif
 
 int main(void) {
-    // Wait 1 second to allow for everything to load
+    // Wait 1 second to allow for everything to load correctly
     ztimer_sleep(ZTIMER_MSEC, 1000);
     // Initialize devices
     led_control_init();

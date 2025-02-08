@@ -92,9 +92,9 @@ async def coap_server():
     root.add_resource(('message',), CoAPResource(server_context))
 
     await asyncio.gather(
-        server_context,
-        heartbeat()
+        heartbeat(),
     )
+
 
 if __name__ == "__main__":
     logging.info("Starting CoAP server script...")

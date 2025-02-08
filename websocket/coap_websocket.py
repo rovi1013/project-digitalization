@@ -46,8 +46,7 @@ class CoAPResource(resource.Resource):
     async def render_post(self, request):
         try:
             if request.mtype == Type.CON:
-                ack = Message(code=Code.EMPTY, mtype=Type.ACK, mid=request.mid)
-                await self.server_context.send_message(ack, request.remote)
+                return Message(code=Code.EMPTY, mtype=Type.ACK, mid=request.mid)
 
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}

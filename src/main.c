@@ -35,7 +35,10 @@ void *coap_thread(void *arg) {
     (void) arg;
     msg_init_queue(coap_msg_queue, MAIN_QUEUE_SIZE);
 
+
     while (1) {
+        uint32_t start_time = ztimer_now(ZTIMER_MSEC);
+
         char buffer_temp[CLASS_COAP_BUFFER_SIZE];
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
@@ -58,6 +61,8 @@ void *coap_thread(void *arg) {
 
             led_control_execute(0,"off");
         }
+        uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time
+        printf("CoAP thread running. Elapsed time: %lu ms\n", (unsigned long)elapsed_time);
 
         ztimer_sleep(ZTIMER_MSEC, 10000);
     }

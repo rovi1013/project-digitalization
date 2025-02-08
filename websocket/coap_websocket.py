@@ -43,7 +43,7 @@ class CoAPResource(resource.Resource):
         try:
             if request.mtype == Type.CON:
                 ack = Message(code=Code.EMPTY, mtype=Type.ACK, mid=request.mid)
-                await self.context.send_message(ack, request.remote)
+                await request.reply(ack)
 
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}

@@ -46,7 +46,6 @@ USEMODULE += saul_reg
 USEMODULE += periph_gpio
 USEMODULE += ztimer
 USEMODULE += printf_float
-#USEPKG += jsmn
 
 # Use module only for non-native boards
 ifneq ($(BOARD),native)
@@ -57,6 +56,20 @@ endif
 ########################################
 ################ ADJUST ################
 ########################################
+#USEMODULE += gnrc_ipv6_nib
+USEMODULE += gnrc_ipv6_router
+USEMODULE += gnrc_ipv6
+USEMODULE += gnrc_netif
+USEMODULE += gnrc_udp
+#USEMODULE += gnrc_icmpv6
+#USEMODULE += gnrc_netdev_default
+USEMODULE += gnrc_rpl
+USEMODULE += od
+USEMODULE += random
+#USEMODULE += shell_commands
+USEPKG += nanocoap
+
+
 
 ############## NETWORKING ##############
 # RIOT networking modules
@@ -69,7 +82,7 @@ USEMODULE += gnrc_ipv6_default
 # Add a routing protocol
 # Additional networking modules that can be dropped if not needed
 USEMODULE += gnrc_icmpv6_echo
-USEMODULE += gnrc_dhcpv6_client
+#USEMODULE += gnrc_dhcpv6_client
 USEMODULE += gnrc_dhcpv6_client_simple_pd
 USEMODULE += dhcpv6_client_ia_na
 USEMODULE += dhcpv6_client_ia_pd
@@ -92,6 +105,7 @@ USEMODULE += gcoap
 USEMODULE += netutils
 USEMODULE += uri_parser
 USEMODULE += ipv4_addr
+USEMODULE += gnrc_udp
 
 ########################################
 ################ ADJUST ################

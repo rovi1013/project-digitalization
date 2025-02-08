@@ -20,16 +20,20 @@
 #define THREAD_STACK_SIZE (2048)
 #endif
 
-#define MAIN_QUEUE_SIZE     (8)
-static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
+#define MAIN_QUEUE_SIZE     (16)
+static msg_t main_msg_queue[MAIN_QUEUE_SIZE];
+static msg_t coap_msg_queue[MAIN_QUEUE_SIZE];
 
 char coap_thread_stack[THREAD_STACK_SIZE];
 #if ENABLE_CONSOLE_THREAD == 1
 char console_thread_stack[THREAD_STACK_SIZE];
+static msg_t cmd_msg_queue[MAIN_QUEUE_SIZE];
 #endif
 
 void *coap_thread(void *arg) {
     (void) arg;
+    msg_init_queue(coap_msg_queue, MAIN_QUEUE_SIZE);
+
     while (1) {
         char buffer_temp[CLASS_COAP_BUFFER_SIZE];
         cpu_temperature_t temp;
@@ -42,6 +46,12 @@ void *coap_thread(void *arg) {
 
         handle_error(__func__, res);
 
+        if (res == COAP_SUCCESS) {
+            led_control_execute(0,"on");
+            ztimer_sleep(ZTIMER_MSEC, 500);
+            led_control_execute(0,"off");
+        }
+
         ztimer_sleep(ZTIMER_MSEC, 60000);
     }
     return NULL;
@@ -50,18 +60,19 @@ void *coap_thread(void *arg) {
 #if ENABLE_CONSOLE_THREAD == 1
 void *console_thread(void *arg) {
     (void) arg;
+    msg_init_queue(cmd_msg_queue, MAIN_QUEUE_SIZE);
     cmd_control_init();
     return NULL;
 }
 #endif
 
 int main(void) {
+    // Wait 1 second to allow for everything to load
+    ztimer_sleep(ZTIMER_MSEC, 1000);
     // Initialize devices
     led_control_init();
     cpu_temperature_init();
-
-    // Initialize thread message queue
-    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
+    msg_init_queue(main_msg_queue, MAIN_QUEUE_SIZE);
 
     // Thread #1
     thread_create(coap_thread_stack, THREAD_STACK_SIZE,
@@ -72,6 +83,11 @@ int main(void) {
     thread_create(console_thread_stack, THREAD_STACK_SIZE,
         7, THREAD_CREATE_STACKTEST, console_thread, NULL, "ConsoleThread");
 #endif
+
+    msg_t msg;
+    while (1) {
+        msg_receive(&msg);
+    }
 
     return 0;
 }

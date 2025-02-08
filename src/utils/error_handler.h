@@ -5,7 +5,9 @@
 #ifndef ERROR_HANDLER_H
 #define ERROR_HANDLER_H
 
-// Define error codes, messages, and type
+/**
+ * Error definition
+ */
 #define ERROR_LIST \
 X(COAP_SUCCESS, "CoAP message send successful", "[INFO]") \
 X(COAP_PKT_SUCCESS, "CoAP package created successful", "[INFO]") \
@@ -26,7 +28,9 @@ X(ERROR_NULL_POINTER, "NULL pointer detected in function call", "[ERROR]") \
 X(ERROR_CALLER_UNKNOWN, "Unknown caller function", "[ERROR]") \
 X(ERROR_UNKNOWN, "An unknown error occurred", "[ERROR]")
 
-// Generate enum values
+/**
+ * Convert the list of errors to an enum
+ */
 typedef enum {
 #define X(code, message, log_level) code,
     ERROR_LIST

@@ -116,10 +116,16 @@ check_interface() {
         echo "✅ Interface $INTERFACE is up and running."
     else
         echo "❌ Interface $INTERFACE is DOWN!"
-        echo "🔧 Run: sudo ip tuntap add dev tap0 mode tap user $(whoami) && sudo ip link set tap0 up"
-        exit 1
+        echo "🔧 A new terminal will open to enable it."
+
+        gnome-terminal -- bash -c "echo 'Setting up network interface...'; sudo ip tuntap add dev tap0 mode tap user $(whoami) && sudo ip link set tap0 up; echo 'Press Enter when done.'; read"
+
+        echo "⏳ Please wait for the network setup to complete in the new terminal, then press Enter here..."
+        read -p "🔁 Press Enter to retry network check..."
+        check_interface  # Re-run the check
     fi
 }
+
 
 # Function to check if `config.ini` exists
 check_config_file() {

@@ -18,6 +18,7 @@ QUIET ?= 1
 ####################################################################################################
 ############################ GET ENVIRONMENT VARIABLES FROM config.ini #############################
 ####################################################################################################
+
 # Telegram variables
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
 TELEGRAM_CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini)
@@ -45,82 +46,56 @@ CFLAGS += -DENABLE_LED_FEEDBACK=$(ENABLE_LED_FEEDBACK)
 # Increase default RIOT CoAP request size limit
 CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512
 
-# RIOT modules
-USEMODULE += shell
-USEMODULE += shell_cmds_default
+####################################################################################################
+###################################### MODULES CONFIGURATION #######################################
+####################################################################################################
+
+USEMODULE += ztimer
+
+# Use SAUL module only for non-native boards
+ifneq ($(BOARD),native)
 USEMODULE += saul_default
 USEMODULE += saul_reg
-USEMODULE += periph_gpio
-USEMODULE += ztimer
-USEMODULE += printf_float
-
-# Use module only for non-native boards
-ifneq ($(BOARD),native)
 USEMODULE += saul_nrf_temperature
 endif
 
-
-########################################
-################ ADJUST ################
-########################################
-#USEMODULE += gnrc_ipv6_nib
-USEMODULE += gnrc_ipv6_router
-USEMODULE += gnrc_ipv6
-USEMODULE += gnrc_netif
-USEMODULE += gnrc_udp
-#USEMODULE += gnrc_icmpv6
-#USEMODULE += gnrc_netdev_default
-USEMODULE += gnrc_rpl
-USEMODULE += od
-USEMODULE += random
-#USEMODULE += shell_commands
-USEPKG += nanocoap
-
-
-
-############## NETWORKING ##############
-# RIOT networking modules
-USEMODULE += netdev_default
-USEMODULE += auto_init_gnrc_netif
-# Activate ICMPv6 error messages
-USEMODULE += gnrc_icmpv6_error
-# Specify the mandatory networking module for a IPv6 routing node
-USEMODULE += gnrc_ipv6_default
-# Add a routing protocol
-# Additional networking modules that can be dropped if not needed
-USEMODULE += gnrc_icmpv6_echo
-#USEMODULE += gnrc_dhcpv6_client
-USEMODULE += gnrc_dhcpv6_client_simple_pd
-USEMODULE += dhcpv6_client_ia_na
-USEMODULE += dhcpv6_client_ia_pd
-USEMODULE += shell_cmd_gnrc_udp
-# Add also the shell, some shell commands
+# Use shell modules only if shell is enabled
+ifeq ($(ENABLE_CONSOLE_THREAD),1)
+USEMODULE += shell
+USEMODULE += shell_cmds_default
 USEMODULE += ps
 USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
+endif
 
-# Optionally include DNS support. This includes resolution of names at an
-# upstream DNS server and the handling of RDNSS options in Router Advertisements
-# to auto-configure that upstream DNS server.
-USEMODULE += sock_dns              # include DNS client
-USEMODULE += gnrc_ipv6_nib_dns     # include RDNSS option handling
-USEMODULE += auto_init_sock_dns
-
-################# COAP #################
+# CoAP Modules
 USEMODULE += gcoap
 USEMODULE += netutils
 USEMODULE += uri_parser
-USEMODULE += ipv4_addr
 USEMODULE += gnrc_udp
 
-########################################
-################ ADJUST ################
-########################################
+# Networking Modules
+USEMODULE += gnrc_ipv6_router
+USEMODULE += gnrc_ipv6
+USEMODULE += gnrc_netif
+USEMODULE += gnrc_udp
+USEMODULE += gnrc_rpl
+USEMODULE += netdev_default
+USEMODULE += auto_init_gnrc_netif
+USEMODULE += gnrc_icmpv6_error
+USEMODULE += gnrc_ipv6_default
+USEMODULE += sock_dns
+USEMODULE += gnrc_ipv6_nib_dns
+USEMODULE += auto_init_sock_dns
 
-# Our custom module(s)
+# Custom module with additional utilities
 DIRS += utils
 USEMODULE += custom_utils
+
+####################################################################################################
+#################################### APPLICATION CONFIGURATION #####################################
+####################################################################################################
 
 # Include path for utils folder
 INCLUDES += -I$(CURDIR)/utils

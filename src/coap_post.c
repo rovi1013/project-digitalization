@@ -99,6 +99,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
             );
 
             if (res < 0) {
+                printf("res: %d\n", res);
                 handle_error(__func__, ERROR_COAP_SEND);
             }
         }

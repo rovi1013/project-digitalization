@@ -12,7 +12,9 @@ INTERFACE="tap0"
 
 # Default Environment Variables
 BOARD="nrf52840dk"
+TEMPERATURE_NOTIFICATION_INTERVAL=2
 ENABLE_CONSOLE_THREAD=0
+ENABLE_LED_FEEDBACK=0
 VERBOSE=0
 LOG_FILE="build_script.log"
 
@@ -42,7 +44,7 @@ show_help() {
     printf "║    %-58s ║\n" "Build firmware can be found in src/bin/."
     echo "║                                                               ║"
     printf "║ %-64s ║\n" "4) 🖥 Open Terminal"
-    printf "║    %-58s ║\n" "Opens a terminal for serial debugging via 'make term'."
+    printf "║    %-58s ║\n" "Opens a terminal, useful for debugging."
     echo "║                                                               ║"
     printf "║ %-63s ║\n" "5) 🔍 Force Re-run of System Checks"
     printf "║    %-58s ║\n" "Re-run system checks with the next execution."
@@ -50,7 +52,12 @@ show_help() {
     printf "║    %-58s ║\n" "Unlocks the nRF device and updates chat ids."
     echo "║                                                               ║"
     printf "║ %-66s ║\n" "6) ⚙️  Modify Environment Variables"
-    printf "║    %-58s ║\n" "Change BOARD, ENABLE_CONSOLE_THREAD, or VERBOSE mode."
+    printf "║    %-58s ║\n" "BOARD: Choose the IoT board to run the application,"
+    printf "║    %-58s ║\n" "TEMPERATURE_NOTIFICATION_INTERVAL: Set the interval of"
+    printf "║    %-58s ║\n" "               temperature notifications (in minutes),"
+    printf "║    %-58s ║\n" "ENABLE_CONSOLE_THREAD: Toggle the RIOT-OS console,"
+    printf "║    %-58s ║\n" "ENABLE_LED_FEEDBACK: Toggle LED Feedback for CoAP,"
+    printf "║    %-58s ║\n" "VERBOSE: Toggle the display of additional information."
     echo "║                                                               ║"
     printf "║ %-66s ║\n" "7) ℹ️  Help Page"
     printf "║    %-58s ║\n" "Shows this help page explaining all options."
@@ -118,7 +125,15 @@ check_interface() {
         echo "❌ Interface $INTERFACE is DOWN!"
         echo "🔧 A new terminal will open to enable it."
 
-        gnome-terminal -- bash -c "echo 'Setting up network interface...'; sudo ip tuntap add dev tap0 mode tap user $(whoami) && sudo ip link set tap0 up; echo 'Press Enter when done.'; read"
+        gnome-terminal -- bash -c "
+echo 'Setting up network interface...'; \
+sudo ip tuntap add dev tap0 mode tap user $(whoami) && \
+sudo ip link set tap0 up && \
+sudo ip a a 2001:db8::1/48 dev tap0 && \
+sudo ip r d 2001:db8::/48 dev tap0 && \
+sudo ip r a 2001:db8::2 dev tap0 && \
+sudo ip r a 2001:db8::/48 via 2001:db8::2 dev tap0; \
+echo 'Press Enter when done.'; read"
 
         echo "⏳ Please wait for the network setup to complete in the new terminal, then press Enter here..."
         read -p "🔁 Press Enter to retry network check..."
@@ -224,12 +239,16 @@ system_checks() {
 load_config() {
     if [[ -f "$CONFIG_FILE" ]]; then
         BOARD=$(awk -F '=' '/^board/ {print $2}' "$CONFIG_FILE" | xargs)
+        TEMPERATURE_NOTIFICATION_INTERVAL=$(awk -F '=' '/^temperature_notification_interval/ {print $2}' "$CONFIG_FILE" | xargs)
         ENABLE_CONSOLE_THREAD=$(awk -F '=' '/^enable_console_thread/ {print $2}' "$CONFIG_FILE" | xargs)
+        ENABLE_LED_FEEDBACK=$(awk -F '=' '/^enable_led_feedback/ {print $2}' "$CONFIG_FILE" | xargs)
         VERBOSE=$(awk -F '=' '/^verbose/ {print $2}' "$CONFIG_FILE" | xargs)
 
         # Fallback to defaults if config is malformed
-        [[ -z "$BOARD" ]] && BOARD="nrf52dk"
+        [[ -z "$BOARD" ]] && BOARD="nrf52840dk"
+        [[ -z "$TEMPERATURE_NOTIFICATION_INTERVAL" ]] && TEMPERATURE_NOTIFICATION_INTERVAL=2
         [[ -z "$ENABLE_CONSOLE_THREAD" ]] && ENABLE_CONSOLE_THREAD=0
+        [[ -z "$ENABLE_LED_FEEDBACK" ]] && ENABLE_LED_FEEDBACK=0
         [[ -z "$VERBOSE" ]] && VERBOSE=0
     else
         echo "⚠️ Config file not found! Creating default config..."
@@ -242,14 +261,18 @@ save_config() {
     if [[ -f "$CONFIG_FILE" ]]; then
         # Create a temp file to store modified settings
         awk -v board="$BOARD" \
+            -v temperature_notification_interval="$TEMPERATURE_NOTIFICATION_INTERVAL" \
             -v enable_console_thread="$ENABLE_CONSOLE_THREAD" \
+            -v enable_led_feedback="$ENABLE_LED_FEEDBACK" \
             -v verbose="$VERBOSE" \
             '
             BEGIN { in_settings = 0 }
             /^\[settings\]/ { in_settings = 1; print; next }
             /^\[/ && !/^\[settings\]/ { in_settings = 0 }
             in_settings && /board *=/ { print "board = " board; next }
+            in_settings && /temperature_notification_interval *=/ { print "temperature_notification_interval = " temperature_notification_interval; next }
             in_settings && /enable_console_thread *=/ { print "enable_console_thread = " enable_console_thread; next }
+            in_settings && /enable_led_feedback *=/ { print "enable_led_feedback = " enable_led_feedback; next }
             in_settings && /verbose *=/ { print "verbose = " verbose; next }
             { print }
             ' "$CONFIG_FILE" > "$CONFIG_FILE.tmp"
@@ -260,7 +283,9 @@ save_config() {
         cat <<EOL > "$CONFIG_FILE"
 [settings]
 board = $BOARD
+temperature_notification_interval = $TEMPERATURE_NOTIFICATION_INTERVAL
 enable_console_thread = $ENABLE_CONSOLE_THREAD
+enable_led_feedback = $ENABLE_LED_FEEDBACK
 verbose = $VERBOSE
 EOL
     fi
@@ -278,7 +303,7 @@ build_firmware() {
 
     if [[ $VERBOSE -eq 1 ]]; then
         echo "⏳ Running build process with live output..."
-        make clean all BOARD=$BOARD ENABLE_CONSOLE_THREAD=$ENABLE_CONSOLE_THREAD
+        make clean all BOARD="$BOARD" ENABLE_CONSOLE_THREAD="$ENABLE_CONSOLE_THREAD"
     else
         run_in_background "make clean all BOARD=$BOARD ENABLE_CONSOLE_THREAD=$ENABLE_CONSOLE_THREAD"
         BUILD_PID=$!  # Capture the process ID (PID) of the background build
@@ -335,23 +360,27 @@ set_env_variables() {
 
         # Display Current Environment Variables
         echo "╔═══════════════════════════════════════════════════════════════╗"
-        printf "║  📌 BOARD: %-50s ║\n" "$BOARD"
+        printf "║  🛠  BOARD: %-50s ║\n" "$BOARD"
+        printf "║  ⏲️  TEMPERATURE_NOTIFICATION_INTERVAL: %-22s ║\n" "${TEMPERATURE_NOTIFICATION_INTERVAL} min"
         printf "║  ⚙️  ENABLE_CONSOLE_THREAD: %-34s ║\n" "$([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
-        printf "║  📝 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
+        printf "║  💡 ENABLE_LED_FEEDBACK: %-36s ║\n" "$([[ ENABLE_LED_FEEDBACK -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+        printf "║  📢 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
         echo "╚═══════════════════════════════════════════════════════════════╝"
         echo ""
 
         # Display Options
         echo "╔═══════════════════════════════════════════════════════════════╗"
-        printf "║ %-64s ║\n" "1) 🛠 Change BOARD"
-        printf "║ %-63s ║\n" "2) 🔄 Toggle ENABLE_CONSOLE_THREAD"
-        printf "║ %-63s ║\n" "3) 📢 Toggle VERBOSE MODE"
-        printf "║ %-66s ║\n" "4) ⬅️  Return to Main Menu"
+        printf "║ %-64s ║\n" "1) 🛠  Change BOARD"
+        printf "║ %-66s ║\n" "2) ⏲️  Change TEMPERATURE_NOTIFICATION_INTERVAL"
+        printf "║ %-66s ║\n" "3) ⚙️  Toggle ENABLE_CONSOLE_THREAD"
+        printf "║ %-63s ║\n" "4) 💡 Toggle ENABLE_LED_FEEDBACK"
+        printf "║ %-63s ║\n" "5) 📢 Toggle VERBOSE MODE"
+        printf "║ %-66s ║\n" "6) ⬅️  Return to Main Menu"
         echo "╚═══════════════════════════════════════════════════════════════╝"
         echo ""
 
         read -p "🎯 Select an option: " env_choice
-        BUILD_NEEDED=0  # Flag to check if a rebuild is needed
+        REBUILD_NEEDED=0  # Flag to check if a rebuild is needed
 
         case $env_choice in
             1)
@@ -359,22 +388,37 @@ set_env_variables() {
                 if [[ -n "$new_board" && "$new_board" != "$BOARD" ]]; then
                     BOARD="$new_board"
                     echo "✅ BOARD changed to $BOARD"
-                    BUILD_NEEDED=1  # Mark build as needed
+                    REBUILD_NEEDED=1
                 else
                     echo "❌ No change. Keeping BOARD=$BOARD"
                 fi
                 ;;
             2)
-                ENABLE_CONSOLE_THREAD=$((1 - ENABLE_CONSOLE_THREAD))
-                echo "✅ ENABLE_CONSOLE_THREAD toggled to $([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
-                BUILD_NEEDED=1  # Mark build as needed
+                read -p "✏️  Enter new TEMPERATURE_NOTIFICATION_INTERVAL value (in minutes): " new_interval
+                if [[ -n "$new_interval" && "$new_interval" != "$TEMPERATURE_NOTIFICATION_INTERVAL" ]]; then
+                    TEMPERATURE_NOTIFICATION_INTERVAL="$new_interval"
+                    echo "✅ TEMPERATURE_NOTIFICATION_INTERVAL changed to $TEMPERATURE_NOTIFICATION_INTERVAL"
+                    REBUILD_NEEDED=1
+                else
+                    echo "❌ No change. Keeping TEMPERATURE_NOTIFICATION_INTERVAL=$TEMPERATURE_NOTIFICATION_INTERVAL"
+                fi
                 ;;
             3)
+                ENABLE_CONSOLE_THREAD=$((1 - ENABLE_CONSOLE_THREAD))
+                echo "✅ ENABLE_CONSOLE_THREAD toggled to $([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+                REBUILD_NEEDED=1
+                ;;
+            4)
+                ENABLE_LED_FEEDBACK=$((1 - ENABLE_LED_FEEDBACK))
+                echo "✅ ENABLE_LED_FEEDBACK toggled to $([[ ENABLE_LED_FEEDBACK -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+                REBUILD_NEEDED=1
+                ;;
+            5)
                 VERBOSE=$((1 - VERBOSE))
                 echo "✅ VERBOSE MODE toggled to $([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
                 save_config
                 ;;
-            4)
+            6)
                 return
                 ;;
             *)
@@ -383,7 +427,7 @@ set_env_variables() {
         esac
 
         # If an environment variable changed, trigger a new build
-        if [[ $BUILD_NEEDED -eq 1 ]]; then
+        if [[ $REBUILD_NEEDED -eq 1 ]]; then
             echo ""
             echo "🔄 Environment variables changed. Starting a new build..."
             reset_checks
@@ -416,9 +460,11 @@ while true; do
     echo "╔═══════════════════════════════════════════════════════════════╗"
     printf "║  🌍 ENVIRONMENT SETTINGS                                      ║\n"
     echo "║---------------------------------------------------------------║"
-    printf "║  📌 BOARD: %-50s ║\n" "$BOARD"
+    printf "║  🛠  BOARD: %-50s ║\n" "$BOARD"
+    printf "║  ⏲️  TEMPERATURE_NOTIFICATION_INTERVAL: %-22s ║\n" "${TEMPERATURE_NOTIFICATION_INTERVAL} min"
     printf "║  ⚙️  ENABLE_CONSOLE_THREAD: %-34s ║\n" "$([[ $ENABLE_CONSOLE_THREAD -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
-    printf "║  📝 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
+    printf "║  💡 ENABLE_LED_FEEDBACK: %-36s ║\n" "$([[ ENABLE_LED_FEEDBACK -eq 1 ]] && echo "ENABLED" || echo "DISABLED")"
+    printf "║  📢 VERBOSE MODE: %-43s ║\n" "$([[ $VERBOSE -eq 1 ]] && echo "ON (Live Output)" || echo "OFF (Silent Mode)")"
     echo "╚═══════════════════════════════════════════════════════════════╝"
 
     # Menu Options

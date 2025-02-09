@@ -15,25 +15,32 @@ DEVELHELP ?= 1
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
-# Flag to manage the console thread execution, set to 1 to enable, 0 to disable
-ENABLE_CONSOLE_THREAD ?= 1
-CFLAGS += -DENABLE_CONSOLE_THREAD=$(ENABLE_CONSOLE_THREAD)
-
-# Extract values from config.ini
+####################################################################################################
+############################ GET ENVIRONMENT VARIABLES FROM config.ini #############################
+####################################################################################################
+# Telegram variables
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
 TELEGRAM_CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini)
+# CoAP Variables
 COAP_SERVER_URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
 COAP_SERVER_ADDRESS := $(shell awk -F' = ' '/address/ {print $$2}' config.ini)
 COAP_SERVER_PORT := $(shell awk -F' = ' '/port/ {print $$2}' config.ini)
 COAP_SERVER_URI_PATH := $(shell awk -F' = ' '/uri_path/ {print $$2}' config.ini)
+# Additional Configurations
+TEMPERATURE_NOTIFICATION_INTERVAL := $(shell awk -F' = ' '/temperature_notification_interval/ {print $$2}' config.ini)
+ENABLE_CONSOLE_THREAD := $(shell awk -F' = ' '/enable_console_thread/ {print $$2}' config.ini)
+ENABLE_LED_FEEDBACK := $(shell awk -F' = ' '/enable_led_feedback/ {print $$2}' config.ini)
 
-# Pass values as C macros
+# Pass variables as C macros
 CFLAGS += -DTELEGRAM_BOT_TOKEN=\"$(TELEGRAM_BOT_TOKEN)\"
 CFLAGS += -DTELEGRAM_CHAT_IDS=\"$(TELEGRAM_CHAT_IDS)\"
 CFLAGS += -DCOAP_SERVER_URL=\"$(COAP_SERVER_URL)\"
 CFLAGS += -DCOAP_SERVER_ADDRESS=\"$(COAP_SERVER_ADDRESS)\"
 CFLAGS += -DCOAP_SERVER_PORT=\"$(COAP_SERVER_PORT)\"
 CFLAGS += -DCOAP_SERVER_URI_PATH=\"$(COAP_SERVER_URI_PATH)\"
+CFLAGS += -DTEMPERATURE_NOTIFICATION_INTERVAL=$(TEMPERATURE_NOTIFICATION_INTERVAL)
+CFLAGS += -DENABLE_CONSOLE_THREAD=$(ENABLE_CONSOLE_THREAD)
+CFLAGS += -DENABLE_LED_FEEDBACK=$(ENABLE_LED_FEEDBACK)
 
 # Increase default RIOT CoAP request size limit
 CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512

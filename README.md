@@ -598,7 +598,7 @@ Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (kea-2.2.0
             reservations: [
                 {
                     "hw-address": "6e:0d:84:59:e0:9b",
-                    "ip-addressess": [ "2001:470:7347:c822::1234" ]
+		    "ip-addresses": [ "2001:470:7347:c811::1234" ]
                 }
             ]
 	},

@@ -545,6 +545,9 @@ ping 2001:470:7347:c318:e476:a9b:e259:a63e
 
 ### Raspberry-PI Configuration
 
+Get info on running service (coap_websocket.serve):
+journalctl -u coap_websocket.service --no-pager -f
+
 NEVER make term in /gnrc_border_router
 
 Do this in /AllRIOT

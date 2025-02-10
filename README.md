@@ -545,6 +545,11 @@ ping 2001:470:7347:c318:e476:a9b:e259:a63e
 
 ### Raspberry-PI Configuration
 
+NEVER make term in /gnrc_border_router
+
+Do this in /AllRIOT
+dist/tools/pyterm/pyterm -p /dev/ttyACM0
+
 Install python dependencies on rapsberry-pi (virtual python env has to be in .venv):
 ```shell
 cd project-digitalization/websocket
@@ -573,7 +578,7 @@ sudo systemctl stop coap_server.service
 sudo systemctl restart coap_server.service
 ```
 
-Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (reservations):
+Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (kea-2.2.0) (reservations):
 ```ini
 "subnet6": [
         {
@@ -590,7 +595,7 @@ Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (reservati
             reservations: [
                 {
                     "hw-address": "6e:0d:84:59:e0:9b",
-                    "ip-address": "2001:470:7347:c822::1234"
+                    "ip-addressess": [ "2001:470:7347:c822::1234" ]
                 }
             ]
 	},

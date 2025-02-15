@@ -25,12 +25,9 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temperature) {
     cpu_temperature->timestamp = 0;
     cpu_temperature->status = ERROR_UNKNOWN;
 
-    saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
-
 #ifdef BOARD_NATIVE
     // Ignore unused variables
     (void) data;
-    (void) device;
     // Mock temperature data for the native platform
     cpu_temperature->temperature = 2500; // Mock value (25.00°C)
     cpu_temperature->scale = -2;
@@ -38,6 +35,8 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temperature) {
     cpu_temperature->timestamp = 0;
     cpu_temperature->status = 0;
 #else
+
+    saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
 
     // Check device correctness
     if (device == NULL) {

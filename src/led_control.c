@@ -14,16 +14,15 @@
 
 // Write a value to an LED
 static int led_saul_write(const uint8_t led_id, const int16_t value) {
-    saul_reg_t *dev = saul_reg_find_nth(led_id);
 
 #ifdef BOARD_NATIVE
-    (void) dev;
     if (value == 0 || value == 255) {
         printf("LED %u set to %s\n", led_id, value == 0 ? "off" : "on");
     } else {
         printf("LED %u set to %d\n", led_id, value);
     }
 #else
+    saul_reg_t *dev = saul_reg_find_nth(led_id);
 
     if (!dev) {
         printf("LED with ID %u not found\n", led_id);

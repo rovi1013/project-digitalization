@@ -581,27 +581,11 @@ sudo systemctl stop coap_server.service
 sudo systemctl restart coap_server.service
 ```
 
-Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (kea-2.2.0) (reservations):
-```ini
-"subnet6": [
-        {
-	    "interface": "usb0",
-            "subnet": "2001:470:7347:c810::/60",
-            "pools": [ { "pool": "2001:470:7347:c811::1/64" } ],
-            "pd-pools": [
-                {
-                    "prefix": "2001:470:7347:c818::",
-                    "prefix-len": 61,
-                    "delegated-len": 64
-                }
-            ],
-            reservations: [
-                {
-                    "hw-address": "6e:0d:84:59:e0:9b",
-		    "ip-addresses": [ "2001:470:7347:c811::1234" ]
-                }
-            ]
-	},
+Added static IP address to usb0 interface manually with rc.local. This script is executed at the end of each multiuser runlevel.
+
+```shell
+sleep 1
+ip -6 addr add 2001:470:7347:c810::1234/64 dev usb0
 ```
 
 <!---

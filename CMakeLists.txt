@@ -16,6 +16,9 @@ set(SOURCE_FILES
         src/utils/error_handler.h
         src/coap_post.c
         src/coap_post.h
+        src/configuration.c
+        src/configuration.h
+        src/config_constants.h
 )
 
 # Set RIOT OS base directory
@@ -30,7 +33,10 @@ include_directories(
         ${RIOTBASE}
 )
 
-# Add a dummy executable target for CLion code insight (won't be used for building)
+# Define dummy environment variables so CLion knows variables
+add_definitions(-DTELEGRAM_BOT_TOKEN="token_ide_placeholder" -DTELEGRAM_CHAT_IDS="id_ide_placeholder")
+
+# Add a dummy executable target for CLion code insight
 add_executable(dummy_target ${SOURCE_FILES})
 
 # Add a custom target to run the Makefile

@@ -31,23 +31,18 @@ typedef enum {
 
 /**
  * Read CPU temperature
- * @param cpu_temperature Pointer to a cpu_temperature_t struct
+ * @param cpu_temp Pointer to a cpu_temperature_t struct
  * @return A cpu_temperature_t struct
  */
-int cpu_temperature_get(cpu_temperature_t *cpu_temperature);
+int cpu_temperature_get(cpu_temperature_t *cpu_temp);
 
 /**
  * Formats the CPU temperature struct into a 'nice' string depending on the caller class
- * @param temp Pointer to a cpu_temperature_t struct
+ * @param cpu_temp Pointer to a cpu_temperature_t struct
  * @param caller_class Name of the caller class
  * @param buffer Pointer to the formatted output string
  * @param buffer_size Size of the output string
  */
-void cpu_temperature_formatter(const cpu_temperature_t *temp, caller_class_t caller_class, char *buffer, size_t buffer_size);
-
-/**
- * Initialize CPU temperature
- */
-void cpu_temperature_init(void);
+void cpu_temperature_formatter(const cpu_temperature_t *cpu_temp, caller_class_t caller_class, char *buffer, size_t buffer_size);
 
 #endif //CPU_TEMPERATURE_H

@@ -14,16 +14,15 @@
 
 // Write a value to an LED
 static int led_saul_write(const uint8_t led_id, const int16_t value) {
-    saul_reg_t *dev = saul_reg_find_nth(led_id);
 
 #ifdef BOARD_NATIVE
-    (void) dev;
     if (value == 0 || value == 255) {
         printf("LED %u set to %s\n", led_id, value == 0 ? "off" : "on");
     } else {
         printf("LED %u set to %d\n", led_id, value);
     }
 #else
+    saul_reg_t *dev = saul_reg_find_nth(led_id);
 
     if (!dev) {
         printf("LED with ID %u not found\n", led_id);
@@ -59,9 +58,4 @@ int led_control_execute(uint8_t led_id, const char *action) {
     // Use 8-bit integer to restrict value to 0-255
     const uint8_t value = atoi(action);
     return led_saul_write(led_id, value);
-}
-
-// Initialize LEDs
-void led_control_init(void) {
-    puts("LED control initialized using SAUL");
 }

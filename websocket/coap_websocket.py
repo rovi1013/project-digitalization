@@ -64,10 +64,10 @@ class CoAPResource(resource.Resource):
             )
 
 async def heartbeat():
-    """Periodically logs an INFO message every 1 minute to confirm the server is running."""
+    """Periodically logs an INFO message every 15 minutes to confirm the server is running."""
     while True:
         logging.info("Server is still running...")
-        await asyncio.sleep(60)
+        await asyncio.sleep(900)
 
 async def coap_server():
     """Start CoAP server on COAP_SERVER_IP."""

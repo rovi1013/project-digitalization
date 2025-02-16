@@ -31,9 +31,10 @@ typedef struct {
 /**
  * Create and send a CoAP POST request with a given message.
  * @param message The message to send.
+ * @param recipient Name of the person to send to. Set to 'all' to send to every chat.
  * @return Custom codes defined in error_handler.h.
  */
-int coap_post_send(const char *message);
+int coap_post_send(const char *message, const char *recipient);
 
 /**
  * Set the status of the CoAP response handler.

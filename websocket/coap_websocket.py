@@ -6,6 +6,11 @@ import aiocoap
 import httpx
 from aiocoap import resource, Code
 
+# Only allow for WARNING logging from automatic loggers
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+
 # Configure logging
 LOG_FILE = os.path.join(os.path.dirname(__file__), "coap_server.log")
 logging.basicConfig(
@@ -29,17 +34,19 @@ class CoAPResource(resource.Resource):
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
-            telegram_api_url = data.get("url")
-            telegram_bot_token = data.get("token")
-            chat_ids = data.get("chat_ids")
-            text = data.get("text")
+            telegram_api_url = data.get("url", "").strip()
+            telegram_bot_token = data.get("token", "").strip()
+            chat_ids = data.get("chat_ids", "").strip()
+            text = data.get("text", "").strip()
+            text = text.replace("\x00", "")
 
             if not telegram_api_url or not telegram_bot_token or not chat_ids or not text:
                 logging.error("Missing required fields in request")
-                logging.error(f"url='{telegram_api_url}', bot_token={telegram_bot_token}, chat_ids={chat_ids}, text='{text}'")
+                logging.error(f"url='{telegram_api_url}', bot_token=[HIDDEN], chat_ids={chat_ids}, text='{text}'")
                 return aiocoap.Message(code=Code.BAD_REQUEST, payload=b"Missing required fields")
 
-            logging.info(f"Received message request: url='{telegram_api_url}', bot_token={telegram_bot_token}, chat_ids={chat_ids}, text='{text}'")
+
+            logging.info(f"Received message request: url='{telegram_api_url}', bot_token=[HIDDEN], chat_ids={chat_ids}, text='{text}'")
             telegram_api_url = f"{telegram_api_url}{telegram_bot_token}"
             chat_ids_list = chat_ids.split(",")
 

@@ -15,6 +15,7 @@
  *
  * The english alphabet has 26 letters, but it is defined with 30 here to allow for extra padding, '\n', etc.
  */
+
 #define BOT_TOKEN_LENGTH 50         // The length of the telegram bot token. [47]
 #define MAX_CHAT_IDS 10             // The maximum number of telegram chats.
 #define CHAT_ID_LENGTH 12           // The length of a single telegram chat id. [11]
@@ -23,11 +24,13 @@
 #define ADDRESS_LENGTH 40           // The length of the IPv6 address of the CoAP server, enough space for any IPv6 address. [39]
 #define PORT_LENGTH 5               // The length of the CoAP server port. [4]
 #define URI_PATH_LENGTH 20          // The length of the CoAP server endpoint.
-#define MESSAGE_DATA_LENGTH 30      // The maximum size of the actual message payload.
+#define MESSAGE_DATA_LENGTH 40      // The maximum size of the actual message payload.
+
 
 /* If any of the required configuration variables is not set during building this will make sure to initialize these
  * variables with some default values.
  */
+
 #ifndef TEMPERATURE_NOTIFICATION_INTERVAL
 #define TEMPERATURE_NOTIFICATION_INTERVAL 5
 #endif

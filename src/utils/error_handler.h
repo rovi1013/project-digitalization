@@ -9,7 +9,7 @@
  * Error definition
  */
 #define ERROR_LIST \
-X(COAP_SUCCESS, "CoAP message send successful", "[INFO]") \
+X(COAP_SUCCESS, "CoAP message send successful to server", "[INFO]") \
 X(COAP_PKT_SUCCESS, "CoAP package created successful", "[INFO]") \
 X(LED_SUCCESS, "LED operation successful", "[INFO]") \
 X(TEMP_SUCCESS, "Temperature operation successful", "[INFO]") \
@@ -23,6 +23,7 @@ X(ERROR_COAP_PAYLOAD, "Payload appending to CoAP request failed", "[ERROR]") \
 X(ERROR_COAP_TIMEOUT, "CoAP request timeout", "[ERROR]") \
 X(ERROR_IPV6_FORMAT, "Invalid IPv6 address format encountered", "[ERROR]") \
 X(ERROR_COAP_SEND, "CoAP request transmission failed", "[ERROR]") \
+X(ERROR_CHAT_ID_NOT_FOUND, "Chat with this ID/person does not exist", "[ERROR]") \
 X(ERROR_ALLOC_MEMORY_FAIL, "Memory allocation failure detected", "[ERROR]") \
 X(ERROR_NO_SENSOR, "Sensor not found or unavailable", "[ERROR]") \
 X(ERROR_TEMP_READ_FAIL, "Temperature data read operation failed", "[ERROR]") \

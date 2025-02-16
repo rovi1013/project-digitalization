@@ -76,4 +76,10 @@ const char* config_get_address(void);
 const char* config_get_port(void);
 const char* config_get_uri_path(void);
 
+/**
+ * Remove a chat entry from the configuration.
+ * @param id_or_name Either ID or username.
+ */
+void config_remove_chat_by_id_or_name(const char *id_or_name);
+
 #endif //CONFIGURATION_H

@@ -45,7 +45,7 @@ void *coap_thread(void *arg) {
         cpu_temperature_get(&temp);
         cpu_temperature_formatter(&temp, CALL_FROM_CLASS_COAP, buffer_temp, CLASS_COAP_BUFFER_SIZE);
 
-        const int res = coap_post_send(buffer_temp);
+        const int res = coap_post_send(buffer_temp, "all");
         handle_error(__func__, res);
 
         if (res == COAP_SUCCESS) {
@@ -59,7 +59,7 @@ void *coap_thread(void *arg) {
             }
         }
         uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time
-        printf("CoAP message took %lu ms to send.\n", (unsigned long)elapsed_time);
+        printf("CoAP communication took %lu ms to finish.\n", (unsigned long)elapsed_time);
 
         if (app_config.enable_led_feedback) {
             led_control_execute(0, "off");

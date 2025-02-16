@@ -163,8 +163,8 @@ static int coap_send_request(const coap_pkt_t *pkt) {
     return COAP_SUCCESS;
 }
 
-// Create a CoAP POST request with a given message.
-int coap_post_send(const char *message) {
+// Create a CoAP POST request with a given message and specific chat_id.
+int coap_post_send(const char *message, const char *recipient) {
     set_coap_response_status(false);
 
     if (!message) {
@@ -178,17 +178,29 @@ int coap_post_send(const char *message) {
     // Step 1: Build URI Path
     snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", config_get_uri_path());
 
-    // Step 2: Build Payload
-    snprintf(payload, sizeof(payload), "url=%s&token=%s&chat_ids=%s&text=%s",
-             config_get_telegram_url(), config_get_bot_token(), config_get_chat_ids_string(), message);
+    // Step 2: Determine the chat ID(s)
+    const char *chat_ids;
+    if (strcmp(recipient, "all") != 0) {
+        chat_ids = config_get_chat_id_by_name(recipient);
+        if (!chat_ids) {
+            handle_error(__func__, ERROR_CHAT_ID_NOT_FOUND);
+            return ERROR_CHAT_ID_NOT_FOUND;
+        }
+    } else {
+        chat_ids = config_get_chat_ids_string();  // Default: Send to all
+    }
 
-    // Step 3: Prepare CoAP Packet
+    // Step 3: Build Payload
+    snprintf(payload, sizeof(payload), "url=%s&token=%s&chat_ids=%s&text=%s",
+             config_get_telegram_url(), config_get_bot_token(), chat_ids, message);
+
+    // Step 4: Prepare CoAP Packet
     coap_pkt_t pkt;
     if (coap_prepare_packet(&pkt, uri_path, payload) != COAP_PKT_SUCCESS) {
         return ERROR_COAP_INIT;
     }
     handle_error(__func__, COAP_PKT_SUCCESS);
 
-    // Step 4: Send Request
+    // Step 5: Send Request
     return coap_send_request(&pkt);
 }

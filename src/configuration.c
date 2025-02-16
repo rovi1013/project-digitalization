@@ -58,6 +58,7 @@ bool config_get_update_flag(void) {
 /*
  * Setter functions
  */
+
 void config_set_notification_interval(const int interval) {
     app_config.temperature_notification_interval = interval;
 }
@@ -113,6 +114,7 @@ void config_set_uri_path(const char *path) {
 /*
  * Getter functions
  */
+
 int config_get_notification_interval(void) {
     return app_config.temperature_notification_interval;
 }
@@ -171,4 +173,22 @@ const char* config_get_port(void) {
 
 const char* config_get_uri_path(void) {
     return app_config.uri_path;
+}
+
+// Remove Chat Entries Functions
+void config_remove_chat_by_id_or_name(const char *id_or_name) {
+    if (!id_or_name) return;
+
+    for (int i = 0; i < MAX_CHAT_IDS; i++) {
+        if (strcmp(app_config.chat_ids[i].first_name, id_or_name) == 0) {
+            app_config.chat_ids[i].first_name[0] = '\0';
+            app_config.chat_ids[i].chat_id[0] = '\0';
+            return;
+        }
+        if (strcmp(app_config.chat_ids[i].chat_id, id_or_name) == 0) {
+            app_config.chat_ids[i].first_name[0] = '\0';
+            app_config.chat_ids[i].chat_id[0] = '\0';
+            return;
+        }
+    }
 }

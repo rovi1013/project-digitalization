@@ -28,7 +28,7 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
     // Mock temperature data for the native platform
     cpu_temp->temperature = 2500; // Mock value (25.00°C)
     cpu_temp->scale = -2;
-    snprintf(cpu_temp->device_name, DEVICE_NAME_MAX_LEN, "%s", "Mock-Temperature-Sensor");
+    snprintf(cpu_temp->device_name, DEVICE_NAME_MAX_LEN, "%s", "Mock-Sensor");
     cpu_temp->timestamp = 0;
     cpu_temp->status = 0;
 #else

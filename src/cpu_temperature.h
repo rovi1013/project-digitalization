@@ -5,10 +5,12 @@
 #ifndef CPU_TEMPERATURE_H
 #define CPU_TEMPERATURE_H
 
+#include "config_constants.h"
+
 #define DEVICE_NAME_MAX_LEN 32
 
 # define CLASS_CMD_BUFFER_SIZE 80
-# define CLASS_COAP_BUFFER_SIZE 30
+# define CLASS_COAP_BUFFER_SIZE MESSAGE_DATA_LENGTH
 
 /**
  * Store the cpu temperature and more meta information

@@ -41,40 +41,130 @@ extern config_t app_config;
  */
 void config_init(void);
 
-/**
- * Set the 'updated' flag of the configuration.
- * Can be used to trigger a reinitialization of the config_t struct.
- * @param is_up_to_date Set the 'updated' status.
- */
-void config_set_update_flag(bool is_up_to_date);
+//############################################################
+//########################## SETTER ##########################
+//############################################################
 
 /**
- * Get the 'updated' status of the current configuration.
- * @return Current 'is up to date'-status.
+ * Set the temperature notification interval.
+ * @param interval Interval in minutes.
  */
-bool config_get_update_flag(void);
-
-// Setters
 void config_set_notification_interval(int interval);
-void config_set_led_feedback(bool enable);
+
+/**
+ * Toggle the LED Feedback on the board for CoAP requests.
+ * @param toggle Either enable (true) or disable (false) the functionality
+ */
+void config_set_led_feedback(bool toggle);
+
+/**
+ * Change to telegram bot token. *
+ * @param token Telegram bot token.
+ */
 void config_set_bot_token(const char *token);
+
+/**
+ * Check if the given name or ID exists in the current configuration.
+ * - If either is found, the corresponding value is updated.
+ * - If no match is found, a new entry is created.
+ * @param name - The username of the chat.
+ * @param id - The ID of the chat.
+ */
 void config_set_chat_id(const char *name, const char *id);
+
+/**
+ * Change the default telegram bot URL.
+ * @param url New telegram bot URL.
+ */
 void config_set_telegram_url(const char *url);
+
+/**
+ * Update the IPv6 address used to connect to the CoAP server.
+ * @param address New IPv6 address.
+ */
 void config_set_address(const char *address);
+
+/**
+ * Update the port used to connect to the CoAP server.
+ * @param port New port.
+ */
 void config_set_port(const char *port);
+
+/**
+ * Update the endpoint used to connect to the CoAP server.
+ * @param path New endpoint.
+ */
 void config_set_uri_path(const char *path);
 
-// Getters
+//############################################################
+//########################## GETTER ##########################
+//############################################################
+
+/**
+ * Get the temperature notification interval configuration.
+ * @return Interval in minutes.
+ */
 int config_get_notification_interval(void);
+
+/**
+ * Get the LED Feedback configuration on the board for CoAP requests.
+ * @return Either enabled (true) or disabled (false)
+ */
 bool config_get_led_feedback(void);
+
+/**
+ * Get the telegram bot token configuration.
+ * @return Telegram bot token.
+ */
 const char* config_get_bot_token(void);
+
+/**
+ * Get a chat ID by its index in chat_ids.
+ * @param index Index of the ID.
+ * @return Chat ID.
+ */
 const char* config_get_chat_id(int index);
+
+/**
+ * Get a chat ID by tha associated username.
+ * @param name The username.
+ * @return Chat ID.
+ */
 const char* config_get_chat_id_by_name(const char *name);
+
+/**
+ * Get all chat IDs from the chat entries currently saved in chat_ids.
+ * @return Comma seperated chat IDs.
+ */
 const char* config_get_chat_ids_string(void);
+
+/**
+ * Get the telegram bot URL configuration.
+ * @return Telegram bot URL.
+ */
 const char* config_get_telegram_url(void);
+
+/**
+ * Get the CoAP server IPv6 address configuration.
+ * @return CoAP IPv6 address.
+ */
 const char* config_get_address(void);
+
+/**
+ * Get the CoAP server port configuration.
+ * @return CoAP Port.
+ */
 const char* config_get_port(void);
+
+/**
+ * Get the CoAP server endpoint configuration.
+ * @return CoAP endpoint.
+ */
 const char* config_get_uri_path(void);
+
+//############################################################
+//######################### REMOVER ##########################
+//############################################################
 
 /**
  * Remove a chat entry from the configuration.

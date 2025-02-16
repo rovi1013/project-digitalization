@@ -38,7 +38,7 @@ class CoAPResource(resource.Resource):
             telegram_bot_token = data.get("token", "").strip()
             chat_ids = data.get("chat_ids", "").strip()
             text = data.get("text", "").strip()
-            text = text.replace("\x00", "")
+            text = text.replace("\x00", "").replace("\n", "")
 
             if not telegram_api_url or not telegram_bot_token or not chat_ids or not text:
                 logging.error("Missing required fields in request")

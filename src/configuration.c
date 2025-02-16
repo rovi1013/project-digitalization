@@ -9,7 +9,6 @@
 #include "utils/error_handler.h"
 
 config_t app_config;
-static bool config_initialized = false;
 
 void config_init(void) {
     // Set default values (from CFLAGS)
@@ -44,27 +43,18 @@ void config_init(void) {
         token = strtok(NULL, ",");
         index++;
     }
-    config_set_update_flag(true);
 }
 
-void config_set_update_flag(const bool is_up_to_date) {
-    config_initialized = is_up_to_date;
-}
-
-bool config_get_update_flag(void) {
-    return config_initialized;
-}
-
-/*
- * Setter functions
- */
+//############################################################
+//########################## SETTER ##########################
+//############################################################
 
 void config_set_notification_interval(const int interval) {
     app_config.temperature_notification_interval = interval;
 }
 
-void config_set_led_feedback(const bool enable) {
-    app_config.enable_led_feedback = enable;
+void config_set_led_feedback(const bool toggle) {
+    app_config.enable_led_feedback = toggle;
 }
 
 void config_set_bot_token(const char *token) {
@@ -77,10 +67,14 @@ void config_set_chat_id(const char *name, const char *id) {
         return;
     }
 
-    // Check if the name already exists and update it
+    // Check if the id or name already exists and update it
     for (int i = 0; i < MAX_CHAT_IDS; i++) {
         if (strcmp(app_config.chat_ids[i].first_name, name) == 0) {
-            strncpy(app_config.chat_ids[i].chat_id, id, CHAT_ID_LENGTH);
+            snprintf(app_config.chat_ids[i].chat_id, CHAT_ID_LENGTH, "%s", id);
+            return;
+        }
+        if (strcmp(app_config.chat_ids[i].chat_id, id) == 0) {
+            snprintf(app_config.chat_ids[i].first_name, CHAT_NAME_LENGTH, "%s", name);
             return;
         }
     }
@@ -88,8 +82,8 @@ void config_set_chat_id(const char *name, const char *id) {
     // If not found, add a new entry in the first empty slot
     for (int i = 0; i < MAX_CHAT_IDS; i++) {
         if (strlen(app_config.chat_ids[i].chat_id) == 0) {  // Empty slot found
-            strncpy(app_config.chat_ids[i].first_name, name, sizeof(app_config.chat_ids[i].first_name));
-            strncpy(app_config.chat_ids[i].chat_id, id, CHAT_ID_LENGTH);
+            snprintf(app_config.chat_ids[i].first_name, CHAT_NAME_LENGTH, "%s", name);
+            snprintf(app_config.chat_ids[i].chat_id, CHAT_ID_LENGTH, "%s", id);
             return;
         }
     }
@@ -111,9 +105,9 @@ void config_set_uri_path(const char *path) {
     snprintf(app_config.uri_path, URI_PATH_LENGTH, "%s", path);
 }
 
-/*
- * Getter functions
- */
+//############################################################
+//########################## GETTER ##########################
+//############################################################
 
 int config_get_notification_interval(void) {
     return app_config.temperature_notification_interval;
@@ -175,7 +169,7 @@ const char* config_get_uri_path(void) {
     return app_config.uri_path;
 }
 
-// Remove Chat Entries Functions
+// Remove chat entries by ID or username
 void config_remove_chat_by_id_or_name(const char *id_or_name) {
     if (!id_or_name) return;
 

@@ -1,7 +1,9 @@
 # Project Digitalization (WiSe 2024/35)
 
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
-control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
+control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. And sending 
+temperature information ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html)) from the board 
+to telegram.
 
 TODO: Change all AllRIOT appearances to standard RIOT + make changes to the files for dongle setup (change configuration)
 

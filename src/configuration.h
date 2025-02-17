@@ -13,7 +13,7 @@
  * Struct for telegram chats
  */
 typedef struct {
-    char first_name[CHAT_NAME_LENGTH];              /**< First name of the person associated to a chat */
+    char first_name[CHAT_NAME_LENGTH];              /**< First name of the person associated with a chat */
     char chat_id[CHAT_ID_LENGTH];                   /**< Chat id of a chat */
 } chat_entry_t;
 

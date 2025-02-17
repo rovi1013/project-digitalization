@@ -9,10 +9,9 @@ TODO: Change all AllRIOT appearances to standard RIOT + make changes to the file
 
 ### RIOT-OS Prerequisites
 
-RIOT-OS requires some (linux) packages to function correctly. It is recommended to read the official 
-[RIOT-OS Getting Started](https://doc.riot-os.org/getting-started.html) documentation. However, for the purpose of this 
-application it should be sufficient to download the following packages, using the appropriate package manager for your
-linux distribution: 
+RIOT-OS requires some (linux) packages to function correctly. It is recommended to read the official [RIOT-OS Getting Started](https://doc.riot-os.org/getting-started.html) 
+documentation. However, for this application it should be enough to download the following packages, using the appropriate 
+package manager for your linux distribution: 
 * git
 * gcc-arm-none-eabi
 * make
@@ -22,11 +21,16 @@ linux distribution:
 * doxygen
 * wget
 * unzip
+* python3
 * python3-serial
+* python3-venv
+* python3-pip
+* gnome-terminal
 
 With Ubuntu (using apt) you can run this command:
 ```shell
-sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3-serial
+sudo apt update
+sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3 python3-serial python3-venv python3-pip gnome-terminal
 ```
 
 ### RIOT-OS Submodule
@@ -46,6 +50,20 @@ The application requires an interface (tap0) to be set up beforehand:
 sudo ip tuntap add dev tap0 mode tap user $(whoami)
 sudo ip link set tap0 up
 ```
+
+### Configuration
+And adjust the following settings:
+```ini
+[telegram]
+bot_token = your_telegram_bot_token
+chat_ids = username_1:chat_id_1,username_2:chat_id_2,...,username_10:chat_id_10
+```
+The second part, setting the `username:chat_id` is not mandatory, since the [update_chat_ids.py](./websocket/update_chat_ids.py)
+python script will add these automatically. However, this script can only get the usernames and chat IDs from the
+Telegram endpoint `/getUpdates` which only shows the latest updates. Therefore, it is recommended to set these up with 
+initial values. The number of users that can be added here is limited to 10, make sure to assign the correct 
+`username:chat_id` combinations.
+
 
 #### BORDER ROUTER SETUP (REQUIRED)
 For communication with the telegram bot the nRF52840-DK board requires an internet connection. This 

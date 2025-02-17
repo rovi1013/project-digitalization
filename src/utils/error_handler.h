@@ -14,9 +14,9 @@ X(COAP_PKT_SUCCESS, "CoAP package created successful", "[INFO]") \
 X(LED_SUCCESS, "LED operation successful", "[INFO]") \
 X(TEMP_SUCCESS, "Temperature operation successful", "[INFO]") \
 X(ERROR_INVALID_ARGUMENT, "Invalid argument provided to function", "[ERROR]") \
-X(ERROR_INVALID_ARG_INTERVAL, "Error: Interval must be a positive number", "[ERROR]") \
-X(ERROR_INVALID_ARG_FEEDBACK, "Error: Feedback must be 0 (off) or 1 (on)", "[ERROR]") \
-X(ERROR_INVALID_ARG_PORT, "Error: Port must be a valid number (1-65535)", "[ERROR]") \
+X(ERROR_INVALID_ARG_INTERVAL, "Interval must be a positive number", "[ERROR]") \
+X(ERROR_INVALID_ARG_FEEDBACK, "Feedback must be 0 (off) or 1 (on)", "[ERROR]") \
+X(ERROR_INVALID_ARG_PORT, "Port must be a valid number (1-65535)", "[ERROR]") \
 X(ERROR_COAP_INIT, "CoAP packet initialization failed", "[ERROR]") \
 X(ERROR_COAP_URI_PATH, "Unable to append URI path in CoAP request", "[ERROR]") \
 X(ERROR_COAP_PAYLOAD, "Payload appending to CoAP request failed", "[ERROR]") \

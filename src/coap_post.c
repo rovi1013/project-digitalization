@@ -47,6 +47,12 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
+    /* Print Payload */
+    if (pkt->payload_len > 0) {
+        printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
+        set_coap_response_status(true);
+        return;
+
     if (msg_type == COAP_TYPE_ACK) {
         if (pkt->hdr->code == COAP_CODE_EMPTY) {
             return;
@@ -202,5 +208,34 @@ int coap_post_send(const char *message, const char *recipient) {
     handle_error(__func__, COAP_PKT_SUCCESS);
 
     // Step 5: Send Request
+    return coap_send_request(&pkt);
+}
+
+/* Sending a post request to websocket to make a get-request to fetch updates */
+int coap_post_get_updates() {
+    set_coap_response_status(false);
+
+    if (!message) {
+        handle_error(__func__,ERROR_INVALID_ARGUMENT);
+        return ERROR_INVALID_ARGUMENT;
+    }
+
+    char uri_path[URI_PATH_LENGTH + 1];
+    char payload[COAP_BUF_SIZE];
+
+    // Step 1: Build URI Path
+    snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", "/update");
+
+    // Step 2: Build Payload
+    snprintf(payload, sizeof(payload), "url=%s&token=%s", config_get_telegram_url(), config_get_bot_token());
+
+    // Step 3: Prepare CoAP Packet
+    coap_pkt_t pkt;
+    if (coap_prepare_packet(&pkt, uri_path, payload) != COAP_PKT_SUCCESS) {
+        return ERROR_COAP_INIT;
+    }
+    handle_error(__func__, COAP_PKT_SUCCESS);
+
+    // Step 4: Send Request
     return coap_send_request(&pkt);
 }

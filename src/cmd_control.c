@@ -81,6 +81,41 @@ static int coap_send_control(const int argc, char **argv) {
     return 0;
 }
 
+// Send a custom CoAP message
+static int coap_get_updates_control(const int argc, char **argv) {
+    if (argc != 1) {
+        handle_error(__func__,ERROR_INVALID_ARGUMENT);
+        puts("Usage: coap-update");
+        return ERROR_INVALID_ARGUMENT;
+    }
+    const uint32_t start_time = ztimer_now(ZTIMER_MSEC);
+
+    const int res = coap_post_get_updates();
+    handle_error(__func__, res);
+
+    if (res == COAP_SUCCESS) {
+        if (app_config.enable_led_feedback) {
+            led_control_execute(0, "on");
+        }
+
+        uint32_t wait_time = 1000;  // Max wait time
+        while (!get_coap_response_status() && wait_time > 0) {
+            printf("CoAP handler status: %s\n", get_coap_response_status() == 0 ? "Running" : "Finished");
+            ztimer_sleep(ZTIMER_MSEC, 50);
+            wait_time -= 50;
+        }
+        printf("CoAP handler status: %s\n", get_coap_response_status() == 0 ? "Running" : "Finished");
+    }
+    const uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time
+    printf("CoAP communication took %lu ms to finish.\n", (unsigned long)elapsed_time);
+
+    if (app_config.enable_led_feedback) {
+        led_control_execute(0, "off");
+    }
+
+    return 0;
+}
+
 // Change Configuration during runtime
 static int modify_config(const int argc, char **argv) {
     if (argc < 2 || argc > 4) {
@@ -190,6 +225,7 @@ static const shell_command_t cmd_control_shell_commands[] = {
     { "led", "Control LEDs (e.g., 'led 0 on')", led_control },
     { "cpu-temp", "Get CPU temperature (e.g., 'cpu-temp')", cpu_temp_control },
     { "coap-send", "Send a custom coap message.", coap_send_control },
+    { "coap-update", "Get updates from telegram.", coap_get_updates_control},
     { "config", "Change the configuration settings.", modify_config },
     { NULL, NULL, NULL } // End marker
 };

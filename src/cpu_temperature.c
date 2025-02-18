@@ -39,16 +39,17 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
     if (device == NULL) {
         cpu_temp->status = ERROR_NO_SENSOR;
         handle_error(__func__,ERROR_NO_SENSOR);
-        return TEMP_SUCCESS;
+        return ERROR_NO_SENSOR;
     }
+
     snprintf(cpu_temp->device_name, DEVICE_NAME_MAX_LEN, "%s", device->name);
 
-    // Read data from device
+    // Read data from a device
     cpu_temp->timestamp = ztimer_now(ZTIMER_USEC);
     if (saul_reg_read(device, &data) < 0) {
         cpu_temp->status = ERROR_TEMP_READ_FAIL;
         handle_error(__func__,ERROR_TEMP_READ_FAIL);
-        return TEMP_SUCCESS;
+        return ERROR_TEMP_READ_FAIL;
     }
 
     cpu_temp->temperature = data.val[0];
@@ -79,18 +80,26 @@ void cpu_temperature_formatter(const cpu_temperature_t *cpu_temp, const caller_c
     const int integer_part = cpu_temp->temperature / divisor;
     const int fractional_part = cpu_temp->temperature % divisor;
 
+    // Use 'CPU' as device name instead of NRF_TEMP in the case of nRF devices
+    char device_name[DEVICE_NAME_MAX_LEN];
+    if (strcmp(cpu_temp->device_name, "NRF_TEMP") == 0) {
+        snprintf(device_name, DEVICE_NAME_MAX_LEN, "%s", "CPU");
+    } else {
+        snprintf(device_name, DEVICE_NAME_MAX_LEN, "%s", cpu_temp->device_name);
+    }
+
     if (cpu_temp->status == 0) {
         switch (caller_class) {
             case CALL_FROM_CLASS_CMD:
                 // Print temperature and device info
                 snprintf(buffer, buffer_size, "[%s] The temperature of %s is %d.%0*d °C\n",
-                        time_str, cpu_temp->device_name, integer_part,
+                        time_str, device_name, integer_part,
                         (cpu_temp->scale < 0 ? -cpu_temp->scale : 0), fractional_part);
                 break;
             case CALL_FROM_CLASS_COAP:
                 // Print temperature only
                 snprintf(buffer, buffer_size, "%s Temperature: %d.%0*d °C\n",
-                        cpu_temp->device_name, integer_part, (cpu_temp->scale < 0 ? -cpu_temp->scale : 0), fractional_part);
+                        device_name, integer_part, (cpu_temp->scale < 0 ? -cpu_temp->scale : 0), fractional_part);
                 break;
             default:
                 handle_error(__func__, ERROR_CALLER_UNKNOWN);

@@ -88,15 +88,15 @@ int main(void) {
 
     msg_init_queue(main_msg_queue, MAIN_QUEUE_SIZE);
 
-    // Thread #1: Console
+    // Thread #1: CoAP
+    thread_create(coap_thread_stack, THREAD_STACK_SIZE,
+        6, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
+
+    // Thread #2: Console
 #if ENABLE_CONSOLE_THREAD == 1
     thread_create(console_thread_stack, THREAD_STACK_SIZE,
         7, THREAD_CREATE_STACKTEST, console_thread, NULL, "ConsoleThread");
 #endif
-
-    // Thread #2: CoAP
-    thread_create(coap_thread_stack, THREAD_STACK_SIZE,
-        6, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
 
     msg_t msg;
     while (1) {

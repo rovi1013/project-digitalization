@@ -1,9 +1,7 @@
 # Project Digitalization (WiSe 2024/35)
 
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
-control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. And sending 
-temperature information ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html)) from the board 
-to telegram.
+control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
 
 TODO: Change all AllRIOT appearances to standard RIOT + make changes to the files for dongle setup (change configuration)
 
@@ -564,6 +562,10 @@ ping 2001:470:7347:c318:e476:a9b:e259:a63e
 ```
 
 ### Raspberry-PI Configuration
+
+Never use make term in AllRIOT/examples/gnrc_border_router/ on the raspberry pi, because this will execute the setup 
+script for the dchpv6 server which in turn removes the current dhcpv6 configuration.  
+Use this instead: AllRIOT/dist/tools/pyterm/pyterm -p /dev/ttyACM0
 
 Install python dependencies on rapsberry-pi (virtual python env has to be in .venv):
 ```shell

@@ -52,6 +52,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
         set_coap_response_status(true);
         return;
+    }
 
     if (msg_type == COAP_TYPE_ACK) {
         if (pkt->hdr->code == COAP_CODE_EMPTY) {
@@ -212,13 +213,8 @@ int coap_post_send(const char *message, const char *recipient) {
 }
 
 /* Sending a post request to websocket to make a get-request to fetch updates */
-int coap_post_get_updates() {
+int coap_post_get_updates(void) {
     set_coap_response_status(false);
-
-    if (!message) {
-        handle_error(__func__,ERROR_INVALID_ARGUMENT);
-        return ERROR_INVALID_ARGUMENT;
-    }
 
     char uri_path[URI_PATH_LENGTH + 1];
     char payload[COAP_BUF_SIZE];

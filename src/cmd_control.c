@@ -88,6 +88,7 @@ static int coap_get_updates_control(const int argc, char **argv) {
         puts("Usage: coap-update");
         return ERROR_INVALID_ARGUMENT;
     }
+    (void) argv;
     const uint32_t start_time = ztimer_now(ZTIMER_MSEC);
 
     const int res = coap_post_get_updates();

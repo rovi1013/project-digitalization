@@ -48,4 +48,6 @@ void set_coap_response_status(bool is_done);
  */
 bool get_coap_response_status(void);
 
+int coap_post_get_updates(void);
+
 #endif //COAP_POST_H

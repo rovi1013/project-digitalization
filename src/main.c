@@ -4,10 +4,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ztimer.h>
 
 #include "msg.h"
 #include "thread.h"
+#include "ztimer.h"
 
 #include "led_control.h"
 #include "cmd_control.h"
@@ -90,12 +90,12 @@ int main(void) {
 
     // Thread #1: CoAP
     thread_create(coap_thread_stack, THREAD_STACK_SIZE,
-        6, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
+        6, 0, coap_thread, NULL, "CoapThread");
 
     // Thread #2: Console
 #if ENABLE_CONSOLE_THREAD == 1
     thread_create(console_thread_stack, THREAD_STACK_SIZE,
-        7, THREAD_CREATE_STACKTEST, console_thread, NULL, "ConsoleThread");
+        7, 0, console_thread, NULL, "ConsoleThread");
 #endif
 
     msg_t msg;

@@ -9,6 +9,7 @@
 
 #include "saul_reg.h"
 #include "phydat.h"
+
 #include "led_control.h"
 #include "utils/error_handler.h"
 

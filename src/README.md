@@ -200,10 +200,6 @@ For `BOARD=native` we simply print a message, pretending to set the value of the
         * "off": Turns the LED off.
         * Integer value 0-255 (e.g., "128"): Sets LED brightness.
 
-### led_feedback
-
-
-
 
 ## Class cpu_temperature
 
@@ -216,6 +212,9 @@ sensor of nRF52840 boards is a die temperature sensor (DTS), meaning it measures
 ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html)).
 
 ### cpu_temperature_t
+
+A struct to store additional information compared to the default phydat_t struct (see **RIOT-OS Modules** in [README](../README.md)) 
+used by SAUL.
 
 <table>
     <thead>
@@ -256,6 +255,18 @@ sensor of nRF52840 boards is a die temperature sensor (DTS), meaning it measures
 
 More information about errors: see **Error Handling** in [Utility README](./utils/README.md).
 
+### caller_class_t
+
+Define different caller classes for the [cpu_temperature_formatter](#cpu_temperature_formatter) string formatting.
+
+### unit_map_t
+
+Provide a struct to be able to assign each unit a corresponding string.
+
+### unit_to_string
+
+Use the `temperature_unit_map` of type `unit_map_t` to return a pointer to a corresponding unit string.
+
 ### cpu_temperature_get
 * Is called using a pointer to a cpu_temperature_t struct.
 * Read temperature value of the `SAUL_SENSE_TEMP` sensor.
@@ -287,10 +298,15 @@ This function only provides the matching divisor to a scale factor, the calculat
   * A buffer for the formatted string
   * The size of this buffer
 
-* Prints cpu_temperature_t to the console.
-* Differentiation between status == 0 and status < 0
-* Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
-* Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
+Calculate the divisor, integer and fractional part of the temperature reading as described [here](#determine_divisor). 
+The caller class determines the format of the output. Keeping the CoAP message payload as small as possible without 
+sacrificing information while the message formated for the shell output contains additional debugging information. 
+
+The formatting of the temperature itself looks like this: `%d.%0*d`. There are the 2 integer parts with the first one 
+being the integer from the temperature and the second one the fractional part. Depending on the scale variable, the 
+minimum number of decimal places is determined. The minimum number of decimal places is the inverse of the scale value
+(scale = -2 -> min decimal places = 2).
+
 
 ## Class coap_post
 

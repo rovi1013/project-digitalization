@@ -9,8 +9,8 @@
 #include "net/gcoap.h"
 #include "net/sock/udp.h"
 #include "net/coap.h"
-#include "coap_post.h"
 
+#include "coap_post.h"
 #include "configuration.h"
 #include "utils/error_handler.h"
 

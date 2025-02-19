@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Make sure this script is executed as sudo user
+if [ "$EUID" -ne 0 ]; then
+    echo "❌ This script must be run with sudo. Use: sudo bash build.sh"
+    exit 1
+fi
+
 # Define paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/src/config.ini"
@@ -7,12 +13,12 @@ UPDATE_SCRIPT="$SCRIPT_DIR/websocket/update_chat_ids.py"
 CHECKS_DONE_FILE="/tmp/build_env_setup_done"
 
 # Define requirements
-REQUIRED_PACKAGES=("git" "gcc-arm-none-eabi" "make" "gcc-multilib" "libstdc++-arm-none-eabi-newlib" "openocd" "gdb-multiarch" "doxygen" "wget" "unzip" "python3-serial" "gnome-terminal")
+REQUIRED_PACKAGES=("git" "gcc-arm-none-eabi" "make" "gcc-multilib" "libstdc++-arm-none-eabi-newlib" "openocd" "gdb-multiarch" "doxygen" "wget" "unzip" "python3-serial" "python3-venv" "python3-pip" "gnome-terminal")
 INTERFACE="tap0"
 
 # Default Environment Variables
 BOARD="nrf52840dk"
-TEMPERATURE_NOTIFICATION_INTERVAL=2
+TEMPERATURE_NOTIFICATION_INTERVAL=5
 ENABLE_CONSOLE_THREAD=0
 ENABLE_LED_FEEDBACK=0
 VERBOSE=0
@@ -30,7 +36,8 @@ show_help() {
     echo "╚═══════════════════════════════════════════════════════════════╝"
 
     echo "This script automates building, flashing, and interacting with"
-    echo "the IoT application. Below are the available options:"
+    echo "the IoT application. (Logging: $LOG_FILE)"
+    echo "Below are the available options:"
 
     echo "╔═══════════════════════════════════════════════════════════════╗"
     printf "║ %-63s ║\n" "1) 🚀 Build and Flash"
@@ -86,9 +93,11 @@ run_in_background() {
         echo "[$TIMESTAMP] Executing: $1"
         eval "$1"
     else
-        echo "===================================================" >> "$LOG_FILE"
-        echo "[$TIMESTAMP] Executing: $1" >> "$LOG_FILE"
-        eval "$1" >> "$LOG_FILE" 2>&1 &
+        {
+        echo "==================================================="
+        echo "[$TIMESTAMP] Executing: $1"
+        eval "$1"
+        } | sudo tee -a "$LOG_FILE" >/dev/null &
     fi
 }
 
@@ -96,6 +105,7 @@ run_in_background() {
 ################################ SYSTEM CHECKS #################################
 ################################################################################
 
+# Function to check and install required packages
 check_packages() {
     echo "🔍 Checking for required packages..."
     MISSING_PACKAGES=()
@@ -108,8 +118,23 @@ check_packages() {
 
     if [ ${#MISSING_PACKAGES[@]} -ne 0 ]; then
         echo "❌ Missing required packages: ${MISSING_PACKAGES[*]}"
-        echo "🔧 Install them with: sudo apt update && sudo apt install ${MISSING_PACKAGES[*]}"
-        exit 1
+        echo "🔧 Installing missing packages..."
+
+        if [[ $VERBOSE -eq 1 ]]; then
+            sudo apt update && sudo apt install -y "${MISSING_PACKAGES[@]}"
+        else
+            echo "⏳ Installing missing packages in the background. Check $LOG_FILE for progress."
+            sudo apt update -qq && sudo apt install -y "${MISSING_PACKAGES[@]}" | sudo tee -a "$LOG_FILE"
+        fi
+
+        sleep 3  # Give some time for installation to start
+
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to install some packages. Check $LOG_FILE for details."
+            exit 1
+        else
+            echo "✅ All required packages installed successfully."
+        fi
     else
         echo "✅ All required packages are installed."
     fi
@@ -119,63 +144,97 @@ check_packages() {
 check_interface() {
     echo "🔍 Checking if network interface $INTERFACE is up..."
 
-    if ip link show $INTERFACE &> /dev/null; then
+    if ip link show "$INTERFACE" &> /dev/null; then
         echo "✅ Interface $INTERFACE is up and running."
     else
         echo "❌ Interface $INTERFACE is DOWN!"
-        echo "🔧 A new terminal will open to enable it."
+        echo "🔧 Setting up network interface $INTERFACE..."
 
-        gnome-terminal -- bash -c "
-echo 'Setting up network interface...'; \
-sudo ip tuntap add dev tap0 mode tap user $(whoami) && \
-sudo ip link set tap0 up && \
-sudo ip a a 2001:db8::1/48 dev tap0 && \
-sudo ip r d 2001:db8::/48 dev tap0 && \
-sudo ip r a 2001:db8::2 dev tap0 && \
-sudo ip r a 2001:db8::/48 via 2001:db8::2 dev tap0; \
-echo 'Press Enter when done.'; read"
+        if [[ $VERBOSE -eq 1 ]]; then
+            sudo ip tuntap add dev "$INTERFACE" mode tap user "$(whoami)"
+            sudo ip link set "$INTERFACE" up
+            sudo ip a a 2001:db8::1/48 dev "$INTERFACE"
+            sudo ip r d 2001:db8::/48 dev "$INTERFACE"
+            sudo ip r a 2001:db8::2 dev "$INTERFACE"
+            sudo ip r a 2001:db8::/48 via 2001:db8::2 dev "$INTERFACE"
+        else
+            run_in_background "
+                sudo ip tuntap add dev $INTERFACE mode tap user $(whoami);
+                sudo ip link set $INTERFACE up;
+                sudo ip a a 2001:db8::1/48 dev $INTERFACE;
+                sudo ip r d 2001:db8::/48 dev $INTERFACE;
+                sudo ip r a 2001:db8::2 dev $INTERFACE;
+                sudo ip r a 2001:db8::/48 via 2001:db8::2 dev $INTERFACE;
+            "
+            echo "⏳ Network interface setup running in the background. Check $LOG_FILE for progress."
+        fi
 
-        echo "⏳ Please wait for the network setup to complete in the new terminal, then press Enter here..."
-        read -p "🔁 Press Enter to retry network check..."
-        check_interface  # Re-run the check
+        sleep 3  # Allow time for the setup to initiate
+
+        # Re-run the check
+        if ip link show "$INTERFACE" &> /dev/null; then
+            echo "✅ Interface $INTERFACE is now up."
+        else
+            echo "❌ Failed to bring up interface $INTERFACE. Check $LOG_FILE for details."
+            exit 1
+        fi
     fi
 }
-
 
 # Function to check if `config.ini` exists
 check_config_file() {
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "❌ Missing config.ini in src/"
-        echo "🔧 Please enter your Telegram bot token and chat IDs to create the config.ini file."
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "✅ Configuration file exists."
+        return
+    fi
 
-        # Prompt for bot token
-        while true; do
-            read -rp "Enter your Telegram bot token: " BOT_TOKEN
-            if [[ -n "$BOT_TOKEN" ]]; then
-                break
-            fi
-            echo "⚠️ Bot token cannot be empty!"
-        done
+    TEMPLATE_FILE="$SCRIPT_DIR/src/config.ini.template"
 
-        # Prompt for chat IDs
-        while true; do
-            read -rp "Enter comma-separated chat IDs (e.g., 12345678,87654321): " CHAT_IDS
-            if [[ -n "$CHAT_IDS" ]]; then
-                break
-            fi
-            echo "⚠️ Chat IDs cannot be empty!"
-        done
-
-        # Create config.ini with user input
+    if [ -f "$TEMPLATE_FILE" ]; then
+        echo "⚠️ Missing config.ini file. Using config.ini.template..."
+        mv "$TEMPLATE_FILE" "$CONFIG_FILE"
+    else
+        echo "⚠️ Missing config.ini file. Creating a new one with default values..."
         cat <<EOL > "$CONFIG_FILE"
 [telegram]
-bot_token = $BOT_TOKEN
-chat_ids = $CHAT_IDS
-EOL
+bot_token = your_telegram_bot_token
+chat_ids =
+url = https://api.telegram.org/bot
 
-        echo "✅ Config file created at: $CONFIG_FILE"
+[websocket]
+address = 2001:470:7347:c810::1234
+port = 5683
+uri_path = /message
+
+[settings]
+board = nrf52840dk
+temperature_notification_interval = 5
+enable_console_thread = 0
+enable_led_feedback = 0
+verbose = 0
+EOL
+        echo "✅ Created a new config.ini file at $CONFIG_FILE."
     fi
+
+    # Prompt for bot token
+    while true; do
+       read -rp "Enter your Telegram bot token (or type 'exit' to quit): " BOT_TOKEN
+       if [[ "$BOT_TOKEN" == "exit" ]]; then
+           echo "❌ Exiting due to missing Telegram bot token."
+           exit 1
+       elif [[ -n "$BOT_TOKEN" ]]; then
+           break
+       fi
+       echo "⚠️ Bot token cannot be empty!"
+   done
+
+    # Modify the new config.ini file
+    sed -i "s|bot_token = your_telegram_bot_token|bot_token = $BOT_TOKEN|g" "$CONFIG_FILE"
+
+    echo "✅ Configuration file initialized successfully!"
+    echo "📄 Updated $CONFIG_FILE with your Telegram bot token."
 }
+
 
 # Function to check if the nRF device is locked
 check_if_locked() {
@@ -211,8 +270,15 @@ update_chat_ids() {
     echo "🚀 Updating chat IDs..."
     python3 "$UPDATE_SCRIPT"
     if [ $? -ne 0 ]; then
-        echo "❌ Error updating chat IDs! Exiting..."
-        exit 1
+        echo "❌ Error updating chat IDs!"
+        echo "📄 Please update the $CONFIG_FILE with first names and chat_ids manually."
+        echo "[telegram]"
+        echo "bot_token = ..."
+        echo "chat_ids = peter:73917876234,max:2985678432,..."
+        echo ""
+        echo "Press Enter after updating to continue..."
+        read -r  # Wait for user confirmation
+        return
     fi
 }
 
@@ -246,7 +312,7 @@ load_config() {
 
         # Fallback to defaults if config is malformed
         [[ -z "$BOARD" ]] && BOARD="nrf52840dk"
-        [[ -z "$TEMPERATURE_NOTIFICATION_INTERVAL" ]] && TEMPERATURE_NOTIFICATION_INTERVAL=2
+        [[ -z "$TEMPERATURE_NOTIFICATION_INTERVAL" ]] && TEMPERATURE_NOTIFICATION_INTERVAL=5
         [[ -z "$ENABLE_CONSOLE_THREAD" ]] && ENABLE_CONSOLE_THREAD=0
         [[ -z "$ENABLE_LED_FEEDBACK" ]] && ENABLE_LED_FEEDBACK=0
         [[ -z "$VERBOSE" ]] && VERBOSE=0
@@ -487,7 +553,7 @@ while true; do
         1) system_checks; build_and_flash ;;
         2) system_checks; build_firmware ;;
         3) system_checks; flash_firmware ;;
-        4) open_terminal ;;
+        4) system_checks; open_terminal ;;
         5) set_env_variables ;;
         6) reset_checks ;;
         7) show_help ;;

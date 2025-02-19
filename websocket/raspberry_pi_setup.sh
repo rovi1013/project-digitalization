@@ -55,6 +55,10 @@ CONFIG_FILE="../src/config.ini"
 echo "📂 Copying $SERVICE_FILE to $SYSTEMD_PATH"
 cp "$SERVICE_FILE" "$SYSTEMD_PATH"
 
+# Modify coap_websocket.py privileges
+sudo chown -R riot:riot coap_websocket.py
+sudo chmod -R u+rwx coap_websocket.py
+
 # Ensure rc.local exists
 if [ ! -f "$RC_LOCAL" ]; then
     echo "⚠️  /etc/rc.local not found. Creating a new one..."

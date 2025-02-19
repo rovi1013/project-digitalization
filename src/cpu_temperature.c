@@ -8,9 +8,29 @@
 #include "saul_reg.h"
 #include "saul.h"
 #include "ztimer.h"
+
 #include "cpu_temperature.h"
 #include "utils/timestamp_convert.h"
 #include "utils/error_handler.h"
+
+// Map the temperature unit enumerators to strings
+const unit_map_t temperature_unit_map[] = {
+    {UNIT_UNDEF, "undefined"},
+    {UNIT_NONE, "none"},
+    {UNIT_TEMP_C, "°C"},
+    {UNIT_TEMP_F, "°F"},
+    {UNIT_TEMP_K, "°K"}
+};
+
+// Use the unit map to get the unit string
+const char *unit_to_string(const uint8_t unit) {
+    for (size_t i = 0; i < sizeof(temperature_unit_map) / sizeof(temperature_unit_map[0]); i++) {
+        if (temperature_unit_map[i].unit == unit) {
+            return temperature_unit_map[i].unit_string;
+        }
+    }
+    return "undefined";
+}
 
 // Execute CPU temperature action
 int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
@@ -20,14 +40,16 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
     }
     cpu_temp->temperature = 0;
     cpu_temp->scale = 0;
+    cpu_temp->unit = 0;
     snprintf(cpu_temp->device_name, DEVICE_NAME_MAX_LEN, "%s", "Unknown");
     cpu_temp->timestamp = 0;
     cpu_temp->status = ERROR_UNKNOWN;
 
 #ifdef BOARD_NATIVE
     // Mock temperature data for the native platform
-    cpu_temp->temperature = 2500; // Mock value (25.00°C)
+    cpu_temp->temperature = 2500; // Mock values for 25.00°C
     cpu_temp->scale = -2;
+    cpu_temp->unit = UNIT_TEMP_C;
     snprintf(cpu_temp->device_name, DEVICE_NAME_MAX_LEN, "%s", "Mock-Sensor");
     cpu_temp->timestamp = 0;
     cpu_temp->status = 0;
@@ -54,6 +76,7 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
 
     cpu_temp->temperature = data.val[0];
     cpu_temp->scale = data.scale;
+    cpu_temp->unit = data.unit;
     cpu_temp->status = 0;
 
 #endif
@@ -92,14 +115,16 @@ void cpu_temperature_formatter(const cpu_temperature_t *cpu_temp, const caller_c
         switch (caller_class) {
             case CALL_FROM_CLASS_CMD:
                 // Print temperature and device info
-                snprintf(buffer, buffer_size, "[%s] The temperature of %s is %d.%0*d °C\n",
-                        time_str, device_name, integer_part,
-                        (cpu_temp->scale < 0 ? -cpu_temp->scale : 0), fractional_part);
+                snprintf(buffer, buffer_size, "[%s] The temperature of %s is %d.%0*d %s.\nRaw phydat_t data: temp: %d, scale: %d, unit: %d.\n",
+                        time_str, device_name, integer_part, (cpu_temp->scale < 0 ? -cpu_temp->scale : 0),
+                        fractional_part, unit_to_string(cpu_temp->unit),
+                        cpu_temp->temperature, cpu_temp->scale, cpu_temp->unit);
                 break;
             case CALL_FROM_CLASS_COAP:
                 // Print temperature only
-                snprintf(buffer, buffer_size, "%s Temperature: %d.%0*d °C\n",
-                        device_name, integer_part, (cpu_temp->scale < 0 ? -cpu_temp->scale : 0), fractional_part);
+                snprintf(buffer, buffer_size, "%s Temperature: %d.%0*d %s\n",
+                        device_name, integer_part, (cpu_temp->scale < 0 ? -cpu_temp->scale : 0),
+                        fractional_part, unit_to_string(cpu_temp->unit));
                 break;
             default:
                 handle_error(__func__, ERROR_CALLER_UNKNOWN);

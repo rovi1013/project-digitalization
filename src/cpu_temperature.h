@@ -9,8 +9,16 @@
 
 #define DEVICE_NAME_MAX_LEN 32
 
-# define CLASS_CMD_BUFFER_SIZE 80
+# define CLASS_CMD_BUFFER_SIZE 120
 # define CLASS_COAP_BUFFER_SIZE MESSAGE_DATA_LENGTH
+
+/**
+ * Assign each unit a corresponding string
+ */
+typedef struct {
+    uint8_t unit;
+    const char *unit_string;
+} unit_map_t;
 
 /**
  * Store the cpu temperature and more meta information
@@ -18,6 +26,7 @@
 typedef struct {
     int16_t temperature;                        /**< CPU temperature reading */
     int8_t scale;                               /**< Scale of measurement (10^scale) */
+    uint8_t unit;                               /**< Unit of the measurement */
     char device_name[DEVICE_NAME_MAX_LEN];      /**< Device name */
     uint32_t timestamp;                         /**< Time of the reading in microseconds */
     int8_t status;                              /**< Custom codes defined in error_handler.h */

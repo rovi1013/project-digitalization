@@ -1,13 +1,159 @@
-# Project Digitalization (WiSe 2024/35)
+# Project Digitalization (WiSe 2024/25)
 
 This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
-control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API. 
+control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API.
 
-TODO: Change all AllRIOT appearances to standard RIOT + make changes to the files for dongle setup (change configuration)
+## Content
+* [Project Structure](#project-structure)
+* [Prerequisites](#prerequisites)
+  * [Border Router Setup](#border-router-setup-required)
+  * [Dependencies](#dependencies)
+  * [Networking Setup](#networking-setup)
+  * [Configuration File](#configuration-file)
+* [Getting Started](#getting-started)
+  * [Quick Start](#quick-start)
+  * [Manual Process](#manual-process)
+  * [On-Board Shell Commands](#on-board-shell-commands)
+  * [Additional Project Commands](#additional-project-commands)
+* [Border Router and Websocket Setup (Networking)](#border-router-and-websocket-setup-networking)
+  * [nRF52840-Dongle Setup](#nrf52840-dongle-setup)
+  * [Raspberry Pi Border Router Setup](#raspberry-pi-border-router-setup)
+  * [Raspberry Pi Websocket Setup](#raspberry-pi-websocket-setup)
+  * [Check Dongle Connectivity](#check-dongle-connectivity)
+  * [More Networking Details](#additional-networking-information)
+* [Main Application](#main-application)
+  * [Source Classes](#source-classes)
+  * [Utility Classes](#utility-classes)
+* [Python Websocket](#python-websocket)
+* [RIOT-OS Modules](#riot-os-modules)
+  * [SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)](#saul-sensor-actuator-uber-layer)
+  * [shell](#shell)
+  * [ztimer](#ztimer)
+  * [gcoap](#gcoap)
+  * [udp](#udp)
+  * [thread](#thread)
+  * [Data Type phydat_t](#data-type-phydat_t)
+* [Docker Alternative](#docker-alternative)
+* [Troubleshooting](#troubleshooting)
+  * [RIOT-OS Git Submodule](#riot-os-git-submodule-not-loading)
+  * [nRF Device Locked](#nrf-device-locked)
+* [Application Insights and Analysis](#application-insights-and-analysis)
+  * [General Commands](#general-commands--tools)
+  * [Tool valgrind](#tool-valgrind)
+  * [Tool GDB](#tool-gdb)
+
+<details>
+  <summary><b><span style="font-size: 2em;">Table of Contents</span></b></summary>
+  <b><span style="font-size: 1.5em; margin-left: 36px"><a href="#project-structure">Project Structure</a></span></b>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#prerequisites">Prerequisites</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#border-router-setup-required">Border Router Setup</a></li>
+      <li><a href="#dependencies">Dependencies</a></li>
+      <li><a href="#networking-setup">Networking Setup</a></li>
+      <li><a href="#configuration-file">Configuration File</a></li>
+    </ul>
+  </details>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#getting-started">Getting Started</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#quick-start">Quick Start</a></li>
+      <li><a href="#manual-process">Manual Process</a></li>
+      <li><a href="#on-board-shell-commands">On-Board Shell Commands</a></li>
+      <li><a href="#additional-project-commands">Additional Project Commands</a></li>
+    </ul>
+  </details>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#border-router-and-websocket-setup-networking">Border Router and Websocket Setup (Networking)</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#nrf52840-dongle-setup">nRF52840-Dongle Setup</a></li>
+      <li><a href="#raspberry-pi-border-router-setup">Raspberry Pi Border Router Setup</a></li>
+      <li><a href="#raspberry-pi-websocket-setup">Raspberry Pi Websocket Setup</a></li>
+      <li><a href="#check-dongle-connectivity">Check Dongle Connectivity</a></li>
+      <li><a href="#additional-networking-information">Additional Networking Information</a></li>
+    </ul>  
+  </details>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#main-application">Main Application</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#source-classes">Source Classes</a></li>
+      <li><a href="#utility-classes">Utility Classes</a></li>
+    </ul> 
+  </details>
+  <b><span style="font-size: 1.5em; margin-left: 36px"><a href="#python-websocket">Python Websocket</a></span></b>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#riot-os-modules">RIOT-OS Modules</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#saul-sensor-actuator-uber-layer">SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)</a></li>
+      <li><a href="#shell">shell</a></li>
+      <li><a href="#ztimer">ztimer</a></li>
+      <li><a href="#gcoap">gcoap</a></li>
+      <li><a href="#udp">udp</a></li>
+      <li><a href="#thread">thread</a></li>
+      <li><a href="#data-type-phydat_t">Data Type phydat_t</a></li>
+    </ul> 
+  </details>
+  <b><span style="font-size: 1.5em; margin-left: 36px"><a href="#docker-alternative">Docker Alternative</a></span></b>  
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#troubleshooting">Troubleshooting</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#riot-os-git-submodule-not-loading">RIOT-OS Git Submodule not Loading</a></li>
+      <li><a href="#nrf-device-locked">nRF Device Locked</a></li>
+    </ul> 
+  </details>
+  <details><summary><b><span style="font-size: 1.5em; margin-left: 25px"><a href="#application-insights-and-analysis">Application Insights and Analysis</a></span></b></summary>
+    <ul style="margin-left: 40px; font-size: 1.2em;">
+      <li><a href="#general-commands--tools">General Commands</a></li>
+      <li><a href="#tool-valgrind">Tool valgrind</a></li>
+      <li><a href="#tool-gdb">Tool GDB</a></li>
+    </ul> 
+  </details>
+</details>
+
+
+## Project Structure
+
+```
+project/digitalization
+├── README.md                     # Documentation
+├── Makefile                      # Wrapper Makefile
+│
+├── src/                          # SOURCE CODE
+│   ├── README.md                 # Application Classes Documentation
+│   ├── Makefile                  # Main Makefile
+│   ├── cmd_control               # Shell Control
+│   ├── coap_post                 # COAP POST Client
+│   ├── config.ini                # Configuration File
+│   ├── configuration             # Configuration Management
+│   ├── cpu_temperature           # CPU Temperature
+│   ├── led_control               # LED Control
+│   ├── main.c                    # Main Application
+│   │
+│   └── utils/                    # UTILITIES
+│       ├── README.md             # Utility Classes Documentation
+│       ├── Makefile              # Custom Module Utils
+│       ├── error_handler         # Handler Errors
+│       └── timestamp_convert     # Convert Timestamps
+│
+├── websocket/                    # PYTHON WEBSOCKET
+│   ├── README.md                 # Websocket Documentation
+│   ├── coap_websocket.py         # CoAP/HTTPs Websocket
+│   ├── coap_websocket.service    # Websocket Linux Service
+│   ├── update_chat_ids.py        # Chat ID Update Script
+│   ├── requirements.txt          # Python Requirements
+│   └── raspberry_pi_setup.sh     # Automate Websocket Setup
+│
+├── build.sh                      # Automate Build Process
+├── Dockerfile                    # Alternative version with Docker
+└── CMakeLists.txt                # CMake project file
+```
+
 
 ## Prerequisites
 
-### RIOT-OS Prerequisites
+The prerequisites have to be fulfilled before the application can be run. The [Border Router Setup](#border-router-setup-networking) 
+is the only one of these which CANNOT be automated. The rest of the following prerequisites (Dependencies, Networking 
+Setup, and Configuration File) are all automated in the [build script](build.sh) ([usage](#quick-start)).
+
+### Border Router Setup (REQUIRED)
+For communication with the telegram bot, the nRF52840-DK board requires an internet connection. This
+connection is established by following the steps described in [Border Router Setup](#border-router-setup-networking).
+
+### Dependencies
 
 RIOT-OS requires some (linux) packages to function correctly. It is recommended to read the official [RIOT-OS Getting Started](https://doc.riot-os.org/getting-started.html) 
 documentation. However, for this application it should be enough to download the following packages, using the appropriate 
@@ -27,96 +173,93 @@ package manager for your linux distribution:
 * python3-pip
 * gnome-terminal
 
-With Ubuntu (using apt) you can run this command:
+Using APT (Advanced Packaging Tool), you can run this command:
 ```shell
 sudo apt update
 sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi-newlib openocd gdb-multiarch doxygen wget unzip python3 python3-serial python3-venv python3-pip gnome-terminal
 ```
 
-### RIOT-OS Submodule
+### Networking Setup
 
-RIOT-OS is included in this project as a submodule, must be downloaded in order to use this application. Sometimes 
-this modules won't load automatically when cloning the project. This can be resolved by running the following 
-commands (from [/project-digitalization](../project-digitalization)).
+The application requires an interface (tap0) to be set up beforehand on the linux machine used to build this application
+and flash the [nRF52840-Dongle](#nrf52840-dongle-setup) for the [border router](#networking--border-router-setup).
 ```shell
-git submodule init
-git submodule update
+sudo ip tuntap add dev tap0 mode tap user $(whoami) \
+sudo ip link set tap0 up \
+sudo ip a a 2001:db8::1/48 dev tap0 \
+sudo ip r d 2001:db8::/48 dev tap0 \
+sudo ip r a 2001:db8::2 dev tap0 \
+sudo ip r a 2001:db8::/48 via 2001:db8::2 dev tap0;
 ```
-
-### Network Connectivity
-
-The application requires an interface (tap0) to be set up beforehand:
-```shell
-sudo ip tuntap add dev tap0 mode tap user $(whoami)
-sudo ip link set tap0 up
-```
-
-### Configuration
-And adjust the following settings:
-```ini
-[telegram]
-bot_token = your_telegram_bot_token
-chat_ids = username_1:chat_id_1,username_2:chat_id_2,...,username_10:chat_id_10
-```
-The second part, setting the `username:chat_id` is not mandatory, since the [update_chat_ids.py](./websocket/update_chat_ids.py)
-python script will add these automatically. However, this script can only get the usernames and chat IDs from the
-Telegram endpoint `/getUpdates` which only shows the latest updates. Therefore, it is recommended to set these up with 
-initial values. The number of users that can be added here is limited to 10, make sure to assign the correct 
-`username:chat_id` combinations.
-
-
-#### BORDER ROUTER SETUP (REQUIRED)
-For communication with the telegram bot the nRF52840-DK board requires an internet connection. This 
-connection is established by following the steps described in [Border Router Setup](#border-router-setup).
 
 ### Configuration File
-To run the application you have to create a config.ini file in [src/](./src) and paste this into it:
+Adjust the following settings:
 ```ini
 [telegram]
 bot_token = your_telegram_bot_token
+chat_ids = firstname_1:chat_id_1,firstname_2:chat_id_2,...,firstname_10:chat_id_10
+```
+The second part, setting the `firstname:chat_id` is not mandatory, since the [update_chat_ids.py](./websocket/update_chat_ids.py)
+python script will add these automatically. However, this script can only get the firstnames and chat IDs from the
+Telegram endpoint `/getUpdates` which only shows the latest updates. Therefore, it is recommended to set these up with
+initial values. The number of users that can be added here is limited to 10, make sure to assign the correct
+`firstname:chat_id` combinations.
 
-[chat_ids]
-list = telegram_chat_id_1,telegram_chat_id_2,...,telegram_chat_id_20
+
+## Getting Started
+
+You can either use the build script or manually run the application. All of these commands are intended to be used from 
+[/project-digitalization](../project-digitalization).
+
+### Quick Start
+
+The [build script](./build.sh) makes using the application as easy as possible.
+
+1. Connect the nRF52840-DK board to your linux machine, ensure the board is powered on (status LED).
+2. Open the build script, make sure to run as sudo user:
+```shell
+sudo bash build.sh
+```
+3. Use the associated numbers to navigate through the script
+
+### Manual Process
+
+First, make sure you have **all the prerequisites fulfilled** and set the desired [configuration parameters](src/config.ini).
+
+Build the application:
+```shell
+make clean all
 ```
 
-This is needed for the application to be able to send messages to specific chats (`chat_ids`) to a specific bot
-(`bot_token`). The list of chat ids is limited to 20 by design in the application, you can use fewer but at least one.
-
-
-## Usage
-
-### Setup
-
-1. Connect the nRF52840-DK board to Your PC and ensure the board is powered on (status LED).
-2. Build and Flash the Application.
-
-Navigate to the project directory:
+Flash the application to the board:
 ```shell
-cd project-digitalization
+make flash
 ```
 
-Build and flash the application (this includes RIOT-OS):
+Open the terminal:
 ```shell
-./build.sh
-```
-
-Build and flash the application and open the terminal (useful for debugging):
-```shell
-./build.sh term
-```
-
-Further possibilities with `build.sh`:
-```shell
-./build.sh flash-only       # Only flash the application (from src/bin/BOARD/)
-./build.sh build-only       # Only build the application
-./build.sh term-only        # Only open the terminal (requires application running)
+make term
 ```
 
 ### On-Board Shell Commands
 
-Control LEDs (brightness can be any value 0-255):
+The Console-Thread has to be enabled:
+* build script: modify environment variables ➜ toggle `ENABLE_CONSOLE_THREAD`
+* config.ini: set `enable_console_thread = 1`
+
+Manage the configuration settings (Use `config help` for more information):
 ```shell
-led <id> <on/off/brighness>
+config <name> <parameter/s>
+```
+
+List the current configuration settings:
+```shell
+config show
+```
+
+Send a custom CoAP message (set receiver to "all" to send to every chat):
+```shell
+coap-send <receiver> <message>
 ```
 
 Read CPU temperature:
@@ -124,9 +267,9 @@ Read CPU temperature:
 cpu-temp
 ```
 
-Configure and list network interfaces:
+Control LEDs (brightness can be any value 0-255):
 ```shell
-ifconfig
+led <id> <on/off/brighness>
 ```
 
 List more commands:
@@ -134,230 +277,38 @@ List more commands:
 help
 ```
 
+### Additional Project Commands
 
-### Useful commands
-
-Unlocking the nrf device:
-```shell
-openocd -c 'interface jlink; transport select swd;
-source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
-```
-
-Using the "native" board for development:
-
-```shell
-BOARD=native make clean all term
-```
-
-List all available RIOT modules:
+List all active RIOT-OS modules:
 
 ```shell
 make info-modules
 ```
 
 
-## Project Structure
-TODO: Update
-```shell
-project/digitalization
-├── README.md                     # Documentation
-├── Makefile                      # Wrapper Makefile
-├── src/
-│   ├── README.md                 # Application classes Documentation
-│   ├── Makefile                  # Main Makefile
-│   ├── main.c                    # Main application file
-│   ├── cmd_control               # Shell control
-│   ├── cpu_temperature           # CPU temperature
-│   ├── led_control               # LED control
-│   ├── coap_control              # COAP client
-│   └── utils/
-│       ├── Makefile              # Custom module utils
-│       ├── timestamp_convert     # Convert timestamps to hh:mm:ss
-│       └── error_handler         # Handler error messaging
-├── websocket/
-│   ├── README.md                 # Websocket Documentation
-│   ├── websocket.py              # Main Websocket file
-│   ├── requirements.txt          # Python requirements
-│   └── .env                      # Secrets storage file
-├── Dockerfile                    # Alternative version with Docker
-└── CMakeLists.txt                # CMake project file
-```
+## Border Router and Websocket Setup (Networking)
 
-## Main Application
+The IoT device we are using in this project (nRF52840) has 6LoWPAN (no WLAN or LAN) connectivity only, as IoT devices
+usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For
+this, we are using a Raspberry Pi and the nRF52840-Dongle. These two combined are the border router. More information
+[here](#additional-networking-information).
 
-The main application running on the nRF52840-DK using RIOT-OS.
+**The [Dependencies](#dependencies) and [Networking Setup](#networking-setup) prerequisites have to be fulfilled
+before this setup.**
 
-### Main Classes
-
-These classes provide the main functionality for the application and are located in [/src](./src/utils). For further 
-information on their functionality see [Classes README](./src/README.md).
-
-### Utility Classes
-
-These Classes are additional utilities used in the application and are located in [/utils](./src/utils). They are 
-included into the application as a module. For further information on their functionality see [Utilities README](./src/utils/README.md).
-
-
-## Python Websocket
-
-The websocket running separately used to convert the messages, coming from the nRF52740-DK board, into https requests
-for the telegram bot. The websocket is located in [/websocket](./websocket), further information on its functionality
-can be found in the [Websocket README](./websocket/README.md).
-
-
-## Build File
-
-The [build.sh](./build.sh) file is a simple bash script that allows automated checks of the prerequisites and requirements. 
-If these checks succeed the application will be build and/or flashed and/or open the application terminal. 
-
-The script is checking:
-* Are all the required packages installed?
-* Is the interface tap0 up and running?
-* Does the config.ini file exists?
-
-
-## RIOT-OS Modules
-
-A short description of each module, its purpose, why it was used, and where in the project it is utilized.
-
-### Module SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)
-
-The SAUL module provides a unified abstraction for accessing sensors and actuators. It simplifies interaction with 
-devices by exposing a common API for reading and writing values. Ensure compatibility with multiple hardware 
-devices using a consistent interface.
-
-* led_control:
-  * Uses saul_reg_write to set LED brightness.
-  * Uses saul_reg_find_nth to locate the correct LED by its SAUL registry ID.
-* cpu_temperature:
-  * Uses saul_reg_read to fetch CPU temperature data.
-
-More information here: [SAUL Driver](https://doc.riot-os.org/group__drivers__saul.html) documentation.
-
-### Data Type phydat_t
-
-phydat_t is a structure that standardizes the representation of physical data across sensors and actuators.
-
-<table>
-  <thead>
-    <tr>
-        <th style="text-align: left;">Data Field</th>
-        <th style="text-align: left;">Description</th>
-        <th style="text-align: left;">Example Value</th>
-        <th style="text-align: left;">Data Type</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-        <td>val[ ]</td>
-        <td>Stores (up to) 3-dimensional values	</td>
-        <td>0.42,0,0</td>
-        <td>int16_t</td>
-    </tr>
-    <tr>
-        <td>unit</td>
-        <td>The (physical) unit of the data</td>
-        <td>UNIT_TEMP_C</td>
-        <td>uint8_t</td>
-    </tr>
-    <tr>
-        <td>scale</td>
-        <td>The scale factor (10^factor)</td>
-        <td>-2</td>
-        <td>int8_t</td>
-    </tr>
-  </tbody>
-</table>
-
-The example values from the table above result in 0.42 = temp * 10^(-2) UNIT_TEMP_C which means temp = 42°C.
-
-Some sensors provide multidimensional data (e.g. accelerometer) which is why the data field val[ ] is 3-dimensional.
-
-More information here: [phydat_t structure](https://doc.riot-os.org/structphydat__t.html) documentation.
-
-### Module Shell
-
-The shell module provides a command-line interface for interacting with the board. It allows users to issue commands, 
-like controlling LEDs or reading sensor values. It provides a simple interface for testing and debugging within 
-the project.
-
-* cmd_control:
-  * Registers all shell commands (e.g., led, cpu-temp) and dispatches them to their respective handlers.
-
-More information here: [phydat_t structure](https://doc.riot-os.org/group__sys__shell.html) documentation.
-
-<!---
-TODO: FUTURE MODULES
---->
-
-### sock.h
-
-A network API for applications and libraries, used to create custom HTTP functionality with the UDP submodule.
-See [link](https://doc.riot-os.org/group__net__sock__udp.html).
-
-### jsmn.h
-JSON parser library. See [link](https://doc.riot-os.org/group__pkg__jsmn.html).
-
-
-## Application Insights and Analysis
-
-An overview of the different tools and analysis performed on this application in order to provide the best result
-possible and avoid common mistakes and causes for errors.
-
-### Tool valgrind
-
-This tool allows to analyse the application, especially the ability to discover memory related issues. Only works for
-x86, x86_64 and ARM architectures in environments supporting virtual memory, this unfortunately also means we can only
-check our application build with `BOARD=native`.
-
-Run valgrind:
-```shell
-valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
---show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
-```
-
-Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
-
-### Tool dive
-
-This tool allows to analyse docker image layers.
-
-Run `dive`:
-```shell
-docker run --rm -it \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    wagoodman/dive:latest riot-app:latest
-```
-
-Dive [Documentation](https://github.com/wagoodman/dive).
-
-
-## Networking / Border Router Setup
-
-The IoT device we are using in this project (nRF52840) has BLE (no WLAN or LAN) connectivity only, as these devices 
-usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For 
-this we are using a raspberry-pi and the nRF52840-Dongle. These two together can be seen as the border router.
-
-The first thing to do is to set up the raspberry-pi and the nRF52840-Dongle. After this is done you can connect the
-nRF52840-DK to the nRF52840-Dongle and then establish internet connectivity. 
-
-1. Set up nRF52840-Dongle and raspberry-pi (once)
-2. Connect nRF52840-DK board and nRF52840-Dongle (every time)
-3. AUTOMATICALLY: Establish internet connectivity
-
-**Network Diagram**
-
-![Network Diagram](./assets/network-diagram.svg)
+1. Set up nRF52840-Dongle 
+2. Set up Raspberry Pi for Border Router functionality 
+3. Set up Raspberry Pi for Websocket functionality
 
 ### nRF52840-Dongle Setup
 
 The nRF52840-Dongle setup can only be done on a standard (x64/x86 based) Linux machine. Because we need the tool
-[nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) to flash the dongle and this tool is NOT
-available for ARM based machines. Therefore, **this setup cannot be done on the raspberry pi**.
+[nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) to flash the dongle and this tool is NOT available for ARM-based machines.
+Therefore, **this setup cannot be done on the raspberry pi**.
 
-1. [Download](https://www.nordicsemi.com/Products/Development-tools/nRF-Util/Download#infotabs) and install nRF Util 
-by following the [documentation](https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html)
-2. Plug the nRF52840-Dongle into any USB port of your device (still the x64/x86 Linux machine).
+1. [Download](https://www.nordicsemi.com/Products/Development-tools/nRF-Util/Download#infotabs) and install nRF Util
+   by following the [documentation](https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html)
+2. Plug the nRF52840-Dongle into any USB port of your device (the x64/x86 Linux machine).
 3. Get the AllRIOT version of the `gnrc_border_router` example:
 ```shell
 git clone https://github.com/AllRIOT/RIOT.git AllRIOT
@@ -368,18 +319,18 @@ cd AllRIOT/examples/gnrc_border_router
 ```
 5. Make and flash the border example to the nRF52840-Dongle:
 ```shell
-BOARD=nrf52840dongle make all clean flash
+BOARD=nrf52840dongle make clean all flash
 ```
 6. The nRF52840-Dongle is now set up.
 
-### Raspberry-Pi Setup
+### Raspberry Pi Border Router Setup
 
-This setup has to be run once (and only once) in order to prepare the border router functionality.
+This setup has to be run once (and only once) to prepare the border router functionality.
 
-1. Plug the nRF52840-Dongle into any USB port of the Raspberry-Pi.
-2. Connect the Raspberry-Pi to your local network (here via ethernet) and power. The rest of this setup assumes an 
-ethernet connection.
-3. Locate the Raspberry-Pi's IP address in your local network (you can use any tool, here we use arp-scan):
+1. Plug the nRF52840-Dongle into any USB port of the Raspberry Pi.
+2. Connect the Raspberry Pi to your local network (e.g., via ethernet) and power. The rest of this setup assumes an
+   ethernet connection.
+3. Locate the Raspberry Pi's IP address in your local network (you can use any tool, here we use arp-scan):
 ```shell
 # Get your ethernet interface name with ifconfig
 ifconfig
@@ -394,83 +345,87 @@ sudo arp-scan -I <ethernet-interface-name> -l
 <ip-address> <mac-address> <vendor-name>
 192.168.0.213 d8:3a:dd:2b:61:79 Raspberry Pi Trading Ltd
 ```
-4. Connect to the Raspberry-Pi via ssh with username "riot" and enter correct password:
+4. Connect to the Raspberry Pi via ssh with the username "riot" and enter the correct password:
 ```shell
 ssh riot@192.168.0.213
 ```
-5. If you are in the correct place your console should look like this:
+5. If you are in the correct place, your console should look like this:
 ```shell
 riot@6lbr-8:~ $
 ```
-6. Get the border router setup from RIOT:
+5. Clone this project on the Raspberry Pi
 ```shell
-git clone https://github.com/AllRIOT/RIOT.git AllRIOT
+git clone https://github.com/rovi1013/project-digitalization.git
 ```
-7. Now the Raspberry-Pi is set up and can be used as a border router.
+6. Now the Raspberry Pi is set up and can be used as a border router.
 
+### Raspberry Pi Websocket Setup
 
+This setup prepares the CoAP/HTTPs websocket to run automatically on the Raspberry Pi on boot using a Linux service. 
+This can be done [automatically](websocket/raspberry_pi_setup.sh) or [manually](#manual-raspberry-pi-websocket-setup). 
+More information on the websocket can be found here: [Websocket Documentation](websocket/README.md).
 
-<!---
-TODO: REWRITE THIS SECTION
+All of these commands are intended to be used from [/websocket](./websocket).
 
-IPv6 lowpan to connect BLE (Bluetooth low energy) of nrf board to standard ipv6, while saving a lot of size for the transmission (e.g. IPv6 header size).
-gnrc_networking make all term for interface, use variable PORT (from makefile) to connect if instance already running
-Connect to internet:
-dist/tools/tapsetup/tapsetup -u \<interface> ; use ethernet as interface to add this to the network
+#### Automatic Raspberry Pi Websocket Setup
 
-### Raspberry-Pi Setup
+Execute the script as sudo user:
+```shell
+sudo bash raspberry_pi_setup.sh
+```
 
-ip addr show or /sbin/ifconfig
+#### Manual Raspberry Pi Websocket Setup
 
-https://unix.stackexchange.com/questions/188367/get-names-of-devices-on-the-network
+1. Install python dependencies on Raspberry Pi (virtual python env has to be in .venv):
+```shell
+cd project-digitalization/websocket
+python -m 'venv' .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+2. Modify  mode to make sure user 'riot' can execute python script:
+```shell
+sudo chown -R riot:riot coap_websocket.py
+sudo chmod -R u+rwx coap_websocket.py
+```
+3. Enable autorun with coap_websocket.service, copy this service file to the correct location:
+```shell
+sudo cp coap_websocket.service /etc/systemd/system/
+```
+4. Add the following lines to /etc/rc.local:
+```shell
+sleep 1
+ip -6 addr add 2001:470:7347:c810::1234/64 dev usb0
+```
+5. Rename the [config.ini.template](./src/config.ini.template) to config.ini and enter your Telegram bot token:
+```ini
+[telegram]
+bot_token = your_telegram_bot_token
+```
+6. Reload the daemon, enable and start the service:
+```shell
+# Reload daemon
+sudo systemctl daemon-reload
+# Enable and Start Service
+sudo systemctl enable coap_server.service
+sudo systemctl start coap_server.service
+```
 
--> look up address range
+Additional management commands for the service:
+```shell
+# Check Service Status
+sudo systemctl status coap_server.service
+# Stop Service
+sudo systemctl stop coap_server.service
+# Restart Service
+sudo systemctl restart coap_server.service
+```
 
-sudo nmap -sn 192.168.0.1/24
+### Check Dongle Connectivity
 
-= gives every device connected to this network
-
-ssh to device -> authenticate with username and password
-
-riot@6lbr-8
-
-(maybe important?):
-install kea on raspberry-pi (sudo apt install kea)
-
-https://kea.readthedocs.io/en/latest/arm/dhcp6-srv.html
-
-TODO: HOW TO SETUP RPI.
-
-### nRF52840-Dongle Setup
-
-nrfutil version >=6.1.1 required
-
--> requires Python >=3.7, <3.11 (https://pypi.org/project/nrfutil/)
-
-Change Makefile in RIOT/examples/gnrc_border_router/Makefile according to
-https://teaching.dahahm.de/teaching/ss23/project/2023/05/06/nrf52840dongle_6lbr.html
-Use gnrc_border_router from AllRIOT/RIOT repository
-
-set up dongle (from AllRIOT/examples/gnrc_boarder_router) on Linux machine (PC: AMD64 only, no ARM):
-BOARD=nrf52840dongle make all flash term
-
-make package (for nrf52840dongle)
-
-find usb device (lsusb), maybe need to push reset button, find target usb port (/dev/ttyACM*, in our case /dev/ttyACM0)
-
-create .zip (for flash): nrfutil pkg generate --hw-version 52 --sd-req 0x00 --application gnrc_border_router.hex --application-version 1 gnrc_border_router.hex.zip
-(explain variables!)
-
-flash the device with .zip: nrfutil dfu usb-serial --port /dev/ttyACM0 --package gnrc_border_router.hex.zip
-
-Test with: ...
---->
-
-### Dongle Connectivity
-
-As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected 
+As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected
 to the nRF52840-Dongle. This section explains how this connection can be established. This setup has to be done every
-time you want to use the border router. **This section requires the [Raspberry-Pi Setup](#raspberry-pi-setup) & 
+time you want to use the border router. **This section requires the [Raspberry-Pi Setup](#raspberry-pi-setup) &
 [nRF52840-Dongle Setup](#nrf52840-dongle-setup).**
 
 #### Raspberry-Pi / nRF52840-Dongle Terminal Setup
@@ -478,17 +433,18 @@ time you want to use the border router. **This section requires the [Raspberry-P
 ```shell
 ssh riot@<network-ip-addr>
 ```
-2. In the raspberry-pi shell (riot@6lbr-8) navigate to the gnrc_border_router directory:
+2. In the raspberry-pi shell (riot@6lbr-8) navigate to the RIOT directory:
 ```shell
-cd ~/AllRIOT/examples/gnrc_border_router
+cd ~/project-digitalization/RIOT
 ```
 3. Open the border router terminal on the nRF52840-Dongle:
 ```shell
-BOARD=nrf52840dongle make term
+dist/tools/pyterm/pyterm -p /dev/ttyACM0
 ```
+NOTE: Do not use `make term` from the `gnrc_border_router` directory!
 4. Get the global ip address of the nRF52840-Dongle; if there are multiple interfaces you can differentiate them by the
-other parameters. For example the correct `Link type` is `wireless`. Also make sure to get the IPv6 address with 
-`scope: global`.
+   other parameters. For example the correct `Link type` is `wireless`. Also make sure to get the IPv6 address with
+   `scope: global`.
 ```shell
 > ifconfig
 # Iface  6  HWaddr: 6E:0D:84:59:FC:9B 
@@ -519,7 +475,7 @@ Correct IPv6 address from this example: `2001:470:7347:c318:e476:a9b:e259:a63e`
 
 #### nRF52840-DK Board Terminal Setup
 1. Connect the nRF52840-DK board to your (Linux) PC.
-2. Simply start the application as described in [Setup](#setup).
+2. Start the application as described in [Getting Started](#getting-started).
 3. Get the global ip address of the nRF52840-DK board; make sure to get the IPv6 address with `scope: global`.
 ```shell
 > ifconfig
@@ -561,112 +517,257 @@ ping <border-router-ip-address>
 ping 2001:470:7347:c318:e476:a9b:e259:a63e
 ```
 
-### Raspberry-PI Configuration
+### Additional Networking Information
 
-Never use make term in AllRIOT/examples/gnrc_border_router/ on the raspberry pi, because this will execute the setup 
-script for the dchpv6 server which in turn removes the current dhcpv6 configuration.  
-Use this instead: AllRIOT/dist/tools/pyterm/pyterm -p /dev/ttyACM0
+As already established, the combination of the Raspberry Pi and nRF52840-Dongle are the "Border Router" in this setup.
+Generally, every device that can connect to both a 6LoWPAN network and a more "standard" network like WLAN or ethernet
+could be used as a border router. In the case of this project, we are using the nRF52840-Dongle to establish a 6LoWPAN
+connection with the nRF52840-DK board. The Raspberry Pi only provides an interface to allow the dongle a connection to
+either WLAN or ethernet. Specifically, the USB ports of the Raspberry Pi provide this interface. The 6LoWPAN connection 
+between the 2 boards is established automatically, in a real world application such a border router would connect many 
+IoT devices to one network.
 
-Install python dependencies on rapsberry-pi (virtual python env has to be in .venv):
+![Network Diagram](./assets/network-diagram.svg)
+
+
+## Main Application
+
+The main application running on the nRF52840-DK using RIOT-OS.
+
+### Source Classes
+
+These classes provide the main functionality for the application and are located in [/src](./src/utils). For further 
+information on their functionality, see [Classes README](./src/README.md).
+
+### Utility Classes
+
+These Classes are additional utilities used in the application and are located in [/utils](./src/utils). They are 
+included in the application as a module. For further information on their functionality, see [Utilities README](./src/utils/README.md).
+
+
+## Python Websocket
+
+The websocket running separately used to convert the messages, coming from the nRF52740-DK board, into HTTPs requests
+for the telegram bot. The websocket is located in [/websocket](./websocket), further information on its functionality
+can be found in the [Websocket README](./websocket/README.md).
+
+
+## RIOT-OS Modules
+
+A short description of each module, and why it was used in the project.
+
+### SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)
+
+The SAUL module provides a unified abstraction for accessing sensors and actuators. It simplifies interaction with
+devices by exposing a common API for reading and writing values. Ensure compatibility with multiple hardware
+devices using a consistent interface.
+
+More information here: [SAUL Driver](https://doc.riot-os.org/group__drivers__saul.html) documentation.
+
+### shell
+
+The shell module provides a command-line interface for interacting with the board. It allows users to issue commands,
+like controlling LEDs or reading sensor values. It provides a simple interface for testing and debugging within
+the project.
+
+More information here: [shell](https://doc.riot-os.org/group__sys__shell.html) documentation.
+
+### ztimer
+
+The ztimer module provides a high level timer abstraction of hardware timers. It is used to get the current application 
+uptime. In the CoAP thread, we use this module to let the thread sleep for a specified amount of time.
+
+More information here: [ztimer](https://doc.riot-os.org/group__sys__ztimer.html) documentation.
+
+### gcoap
+
+The gcoap module is a high level interface for CoAP messaging. While this also provides CoAP server operation 
+capabilities in this application, we only use the client operations. The CoAP client is used to send and receive  
+messages to and from the CoAP websocket.
+
+More information here: [gcoap](https://doc.riot-os.org/group__net__gcoap.html) documentation.
+
+### udp
+
+The udp module is part of the [generic (GNRC) network stack](https://doc.riot-os.org/group__net__gnrc.html) of RIOT. 
+It implements the UDP protocol which is used for the networking of this application.
+
+More information here: [udp](https://doc.riot-os.org/group__net__gnrc__udp.html) documentation.
+
+### thread
+
+The thread module allows for multi-threading in RIOT applications. This module is used to create threads and assign 
+different priority levels to each of them.
+
+More information here: [thread](https://doc.riot-os.org/group__core__thread.html) documentation.
+
+### Data Type phydat_t
+
+phydat_t is a structure that standardizes the representation of physical data across sensors and actuators.
+
+<table>
+  <thead>
+    <tr>
+        <th style="text-align: left;">Data Field</th>
+        <th style="text-align: left;">Description</th>
+        <th style="text-align: left;">Example Value</th>
+        <th style="text-align: left;">Data Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <td>val[ ]</td>
+        <td>Stores (up to) 3 values	</td>
+        <td>4200,0,0</td>
+        <td>int16_t</td>
+    </tr>
+    <tr>
+        <td>unit</td>
+        <td>The (physical) unit of the data</td>
+        <td>UNIT_TEMP_C</td>
+        <td>uint8_t</td>
+    </tr>
+    <tr>
+        <td>scale</td>
+        <td>The scale factor (10^factor)</td>
+        <td>-2</td>
+        <td>int8_t</td>
+    </tr>
+  </tbody>
+</table>
+
+The example values from the table above result in 4200 = temp * 10^(-2) UNIT_TEMP_C which means temp = 42°C. Some
+sensors provide multidimensional data (e.g., accelerometer) which is why the data field `val[]` is 3-dimensional.
+
+More information here: [phydat_t structure](https://doc.riot-os.org/structphydat__t.html) documentation.
+
+
+## Docker Alternative
+
+It is possible to run the application in a docker container. This is limited to the `BOARD=native` environment, which
+requires mocking of sensor data. This will hide possible issues with e.g., reading real sensor data or getting sensor
+information. This can be used on Windows machines to run the application.
+
+Make sure the docker daemon is running.
+
+To build the image, simply use the [Dockerfile](./Dockerfile):
 ```shell
-cd project-digitalization/websocket
-python -m 'venv' .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+docker build -t riot-app .
 ```
 
-Modify mode to make sure user 'riot' can execute python script:
+Then you can run the container:
 ```shell
-sudo chown -R riot:riot coap_websocket.py
-sudo chmod -R u+rwx coap_websocket.py
+docker run -it riot-app
 ```
 
-Autorun with coap_websocket.service, placed in /etc/systemd/system/. Setup:
+
+## Troubleshooting
+
+Some common errors and possible solutions.
+
+### RIOT-OS Git Submodule not Loading
+
+The RIOT-OS git repository is included in this project as a submodule, must be downloaded to use this application.
+Sometimes this module won't load automatically when cloning the project. This can be resolved by running the following
+commands (from [/project-digitalization](../project-digitalization)).
 ```shell
-# Enable Service
-sudo systemctl daemon-reload
-sudo systemctl enable coap_server.service
-# Start Service
-sudo systemctl start coap_server.service
-# Check Service Status
-sudo systemctl status coap_server.service
-# Stop or Restart Service
-sudo systemctl stop coap_server.service
-sudo systemctl restart coap_server.service
+git submodule init
+git submodule update
 ```
 
-Added static IP address to usb0 interface, in /etc/kea/kea-dhcp6.conf (reservations):
-```ini
-"subnet6": [
-        {
-	    "interface": "usb0",
-            "subnet": "2001:470:7347:c810::/60",
-            "pools": [ { "pool": "2001:470:7347:c811::1/64" } ],
-            "pd-pools": [
-                {
-                    "prefix": "2001:470:7347:c818::",
-                    "prefix-len": 61,
-                    "delegated-len": 64
-                }
-            ],
-            reservations: [
-                {
-                    "hw-address": "6e:0d:84:59:e0:9b",
-                    "ip-address": "2001:470:7347:c822::1234"
-                }
-            ]
-	},
-```
+### nRF Device Locked
 
-<!---
+After rebooting, the nRF device sometimes is locked. Using the [build script](./build.sh) this is done automatically. 
+But you can also manually unlock the device using `openocd`:
 
-connect dongle to raspberry-pi
-ssh to rapsberry-pi
-go to AllRIOT/examples/gnrc_boarder_router
-BOARD=nrf52840dongle make term
-
-connect IoT board (nrf52840dk) to Linux machine (PC)
-Use gnrc network example from RIOT for testing (AllRIOT/examples/gnrc_networking)
-BOARD=nrf52840dk make all clean flash term
-ifconfig
 ```shell
-2024-12-11 13:49:48,151 # Iface  6  HWaddr: 39:2F  Channel: 26  NID: 0x23  PHY: O-QPSK 
-2024-12-11 13:49:48,155 #           Long HWaddr: A6:1D:B3:F5:52:12:39:2F 
-2024-12-11 13:49:48,157 #            State: IDLE 
-2024-12-11 13:49:48,163 #           ACK_REQ  L2-PDU:102  MTU:1280  HL:64  6LO  
-2024-12-11 13:49:48,164 #           IPHC  
-2024-12-11 13:49:48,167 #           Source address length: 8
-2024-12-11 13:49:48,170 #           Link type: wireless
-2024-12-11 13:49:48,176 #           inet6 addr: fe80::a41d:b3f5:5212:392f  scope: link  VAL
-2024-12-11 13:49:48,182 #           inet6 addr: 2001:db8:0:2:a41d:b3f5:5212:392f  scope: global  VAL
-2024-12-11 13:49:48,185 #           inet6 group: ff02::1
-2024-12-11 13:49:48,186 #           
-2024-12-11 13:49:48,189 #           Statistics for Layer 2
-2024-12-11 13:49:48,192 #             RX packets 3  bytes 222
-2024-12-11 13:49:48,196 #             TX packets 3 (Multicast: 2)  bytes 0
-2024-12-11 13:49:48,199 #             TX succeeded 3 errors 0
-2024-12-11 13:49:48,202 #           Statistics for IPv6
-2024-12-11 13:49:48,205 #             RX packets 2  bytes 224
-2024-12-11 13:49:48,210 #             TX packets 3 (Multicast: 2)  bytes 224
-2024-12-11 13:49:48,213 #             TX succeeded 3 errors 0
+openocd -c 'interface jlink; transport select swd;
+source [find target/nrf52.cfg]' -c 'init'  -c 'nrf52_recover'
 ```
-take ip address with "scope: global" from IoT board (nrf52840dk)
 
-on rapsberry-pi console (stil in the "dongle console")
-```ping <inet6 addr - scope: global>```
+
+## Application Insights and Analysis
+
+An overview of the different tools and analysis performed on this application to provide the best result possible and 
+avoid common mistakes and causes for errors.
+
+### General Commands / Tools
+
+Get the PID (process id) of the application (has to be running):
 ```shell
-2024-12-11 13:59:44,241 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=0 ttl=64 rssi=-60 dBm time=9.263 ms
-2024-12-11 13:59:45,238 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=1 ttl=64 rssi=-60 dBm time=6.663 ms
-2024-12-11 13:59:46,238 # 12 bytes from 2001:db8:0:2:a41d:b3f5:5212:392f: icmp_seq=2 ttl=64 rssi=-60 dBm time=6.025 ms
-2024-12-11 13:59:46,238 # 
-2024-12-11 13:59:46,243 # --- 2001:db8:0:2:a41d:b3f5:5212:392f PING statistics ---
-2024-12-11 13:59:46,247 # 3 packets transmitted, 3 packets received, 0% packet loss
-2024-12-11 13:59:46,251 # round-trip min/avg/max = 6.025/7.317/9.263 ms
+ps aux | grep project
+# "project" is the partial name search for the process
+# The number in the second column of the output is the PID
+# USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
 ```
 
-SUCCESS!
+Use `strace` to get the "output" of the process by id:
+```shell
+strace -p <process_id>
+```
 
---->
+Debug the application with [GDB](#tool-gdb):
+```shell
+sudo gdb --pid=<process_id>
+# Opens gbd console
+# Set breakpoint at function_name
+b function_name
+# Run the app
+run
+# Go though the execution
+next
+```
+
+### Tool valgrind
+
+This tool allows analyzing the application, especially the ability to discover memory related issues. Only works for
+x86, x86_64 and ARM architectures in environments supporting virtual memory; this unfortunately also means we can only
+check our application build with `BOARD=native`.
+
+Run valgrind:
+```shell
+valgrind --tool=memcheck --track-origins=yes --trace-children=no --run-libc-freeres=yes --demangle=yes \
+--show-below-main=no --workaround-gcc296-bugs=no --undef-value-errors=yes ./src/bin/native/project-digitalization.elf 
+```
+
+Valgrind [Documentation](https://valgrind.org/docs/manual/manual-intro.html).
+
+### Tool GDB
+
+The GNU Project Debugger (GDB) is a powerful tool for debugging applications in various programming languages, 
+primarily C and C++. It allows inspecting and controlling a program's execution, set breakpoints, examine memory, 
+and diagnose a variety of issues. 
+
+You can either start it using the PID ([get process id](#general-commands--tools)):
+```shell
+sudo gdb --pid=<process_id>
+```
+
+Or start it using the compiled application (.elf in src/bin/...):
+```shell
+gdb src/bin/.../project-digitalization.elf
+```
+
+Now you can:
+* Set breakpoints with `break function_name`
+* Start debugging with `run`
+* Continue after breakpoint with `continue`
+* Debug the application step-by-step with `next`
+* Step into a function call with `step`
+* Inspect variables with `print var_name` or `info var_name`
+* Modify variables with `set var_name = value`
+* Trace variable changes with `watch var_name`
+* Inspect memory with `x/<repeat><format><size> <address>`
+  * repeat: Number of entries to display
+  * format: Display format (x = hex, d = decimal, s = string, ...)
+  * size: Data size (b = byte, h = halfword, w = word, g = giant/8 bytes)
+  * address: Memory location (can be variable, pointer, register, or explicit address)
+* Check memory allocation and freeing with `break malloc` and `break free`
+* View stack memory with `info locals`
+* View cpu registers with `info registers`
+* And much more
+
+GDB [Documentation](https://www.sourceware.org/gdb/documentation/)
 
 
 ## _Telegram_ Bot Integration
@@ -709,25 +810,6 @@ led <1-4> <1-4> ... toggle
 You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> \<1-4>).
 Inferentially the maximum number of target LEDs for the commands above is 4.
 --->
-
-
-## Docker Alternative
-
-It is possible to run the application in a docker container. This is limited to the `BOARD=native` environment, which 
-requires mocking of sensor data. This will hide possible issues with e.g. reading real sensor data or getting sensor 
-information.
-
-Make sure the docker daemon is running.
-
-To build the image simply use the [Dockerfile](./Dockerfile):
-```shell
-docker build -t riot-app .
-```
-
-Then you can run the container:
-```shell
-docker run -it riot-app
-```
 
 
 ## TODOs

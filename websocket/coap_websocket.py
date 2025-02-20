@@ -95,7 +95,7 @@ class CoAPResourceGet(resource.Resource):
                 if response.status_code == 200:
                     #data = response.json()
                     #CoAPResource.messages = [update["message"]["text"] for update in data.get("result", []) if "message" in update]
-                    logging.info(f"Retrieved messages: {CoAPResource.messages}")
+                    logging.info(f"Retrieved JSON from Telegram")
                     return aiocoap.Message(code=Code.CONTENT, payload=json.dumps(response.json()).encode("utf-8"))
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")

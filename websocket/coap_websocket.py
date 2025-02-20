@@ -30,9 +30,6 @@ logging.info(f"Using CoAP server IP: {coap_server_ip}")
 
 class CoAPResource(resource.Resource):
     """CoAP Resource to handle POST requests"""
-
-    messages = []
-
     async def render_post(self, request):
         try:
             payload = request.payload.decode("utf-8")
@@ -96,10 +93,10 @@ class CoAPResourceGet(resource.Resource):
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{telegram_api_url}{telegram_bot_token}/getUpdates")
                 if response.status_code == 200:
-                    data = response.json()
-                    CoAPResource.messages = [update["message"]["text"] for update in data.get("result", []) if "message" in update]
+                    #data = response.json()
+                    #CoAPResource.messages = [update["message"]["text"] for update in data.get("result", []) if "message" in update]
                     logging.info(f"Retrieved messages: {CoAPResource.messages}")
-                    return aiocoap.Message(code=Code.CONTENT, payload=str(CoAPResource.messages).encode("utf-8"))
+                    return aiocoap.Message(code=Code.CONTENT, payload=json.dumps(response.json()).encode("utf-8"))
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")
                     return aiocoap.Message(code=Code.INTERNAL_SERVER_ERROR, payload=b"Failed to fetch updates")

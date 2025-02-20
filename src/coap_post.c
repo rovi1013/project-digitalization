@@ -14,6 +14,8 @@
 #include "configuration.h"
 #include "utils/error_handler.h"
 
+#define CONFIG_PASSWORD "password123"
+
 coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
 static bool coap_response_status = false;
 
@@ -25,6 +27,88 @@ void set_coap_response_status(const bool is_done) {
 // Get CoAP response handler status
 bool get_coap_response_status(void) {
     return coap_response_status;
+}
+
+void process_config_command(const char *message) {
+    char buffer[COAP_BUF_SIZE];
+    strncpy(buffer, message, COAP_BUF_SIZE);
+    buffer[COAP_BUF_SIZE - 1] = '\0';
+
+    char *token = strtok(buffer, " ");
+    if (!token || strcmp(token, "config") != 0) {
+        printf("Ungültiges Format.\n");
+        return;
+    }
+
+    // Check
+    char *password = strtok(NULL, " ");
+    if (!password || strcmp(password, CONFIG_PASSWORD) != 0) {
+        printf("Falsches Passwort.\n");
+        return;
+    }
+
+    // Variable lesen
+    char *variable = strtok(NULL, " ");
+    if (!variable) {
+        printf("Fehlende Variable.\n");
+        return;
+    }
+
+    // Werte auslesen
+    char *value1 = strtok(NULL, " ");
+    char *value2 = strtok(NULL, " ");
+
+    if (strcmp(variable, "set-chat") == 0) {
+        if (!value1 || !value2) {
+            printf("Fehlende Werte für set-chat.\n");
+            return;
+        }
+        printf("Setze Chat %s mit ID %s\n", value1, value2);
+    }
+    else {
+        if (!value1) {
+            printf("Fehlender Wert für %s.\n", variable);
+            return;
+        }
+        if (strcmp(variable, "interval") == 0) {
+            int minutes = atoi(value1);
+            printf("Setze Intervall auf %d Minuten\n", minutes);
+
+        }
+        else if (strcmp(variable, "feedback") == 0) {
+            int feedback = atoi(value1);
+            printf("Setze Feedback auf %d\n", feedback);
+
+        }
+        else if (strcmp(variable, "bot-token") == 0) {
+            printf("Setze Bot-Token: %s\n", value1);
+
+        }
+        else if (strcmp(variable, "remove-chat") == 0) {
+            printf("Entferne Chat: %s\n", value1);
+
+        }
+        else if (strcmp(variable, "telegram-url") == 0) {
+            printf("Setze Telegram-URL: %s\n", value1);
+
+        }
+        else if (strcmp(variable, "address") == 0) {
+            printf("Setze IPv6-Adresse: %s\n", value1);
+
+        }
+        else if (strcmp(variable, "port") == 0) {
+            int port = atoi(value1);
+            printf("Setze Port auf %d\n", port);
+
+        }
+        else if (strcmp(variable, "uri-path") == 0) {
+            printf("Setze URI-Pfad: %s\n", value1);
+
+        }
+        else {
+            printf("Ungültige Konfigurationsanweisung.\n");
+        }
+    }
 }
 
 // Response handler for CoAP requests
@@ -47,11 +131,29 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
-    /* Print Payload */
+    /* Print Payload
     if (pkt->payload_len > 0) {
         printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
         set_coap_response_status(true);
         return;
+    }*/
+
+    if (pkt->payload_len > 0) {
+        char response[COAP_BUF_SIZE];
+        strncpy(response, (char *)pkt->payload, pkt->payload_len);
+        response[pkt->payload_len] = '\0';
+
+        printf("Received REsponse: %s\n", response);
+
+        if (strncmp(response, "[", 1) == 0) {
+            char *msg = strtok(response, "[],");
+            while (msg) {
+                process_config_command(msg);
+                msg = strtok(NULL, "[],");
+            }
+        }
+
+        set_coap_response_status(true);
     }
 
     if (msg_type == COAP_TYPE_ACK) {

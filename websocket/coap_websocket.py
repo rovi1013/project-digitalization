@@ -5,6 +5,7 @@ import logging
 import aiocoap
 import httpx
 from aiocoap import resource, Code
+import re
 
 # Only allow for WARNING logging from automatic loggers
 logging.getLogger("httpx").setLevel(logging.WARNING)

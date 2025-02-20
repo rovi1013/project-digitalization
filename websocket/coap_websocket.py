@@ -94,10 +94,32 @@ class CoAPResourceGet(resource.Resource):
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{telegram_api_url}{telegram_bot_token}/getUpdates")
                 if response.status_code == 200:
-                    #data = response.json()
-                    #CoAPResource.messages = [update["message"]["text"] for update in data.get("result", []) if "message" in update]
+                    data = response.json()
                     logging.info(f"Retrieved JSON from Telegram")
-                    return aiocoap.Message(code=Code.CONTENT, payload=json.dumps(response.json()).encode("utf-8"))
+
+                    # Serialize the data to JSON and check if it's large enough for blockwise transfer
+                    json_data = json.dumps(data)
+                    payload_size = len(json_data)
+
+                    # Define the maximum payload size per block (CoAP Block2)
+                    max_block_size = 512  # Max length the board can handle
+                    if payload_size > max_block_size:
+                        # Blockwise transfer
+                        blocks = [json_data[i:i+max_block_size] for i in range(0, payload_size, max_block_size)]
+
+                        # Send blocks one by one
+                        for idx, block in enumerate(blocks):
+                            # Create CoAP message with Block2 option
+                            block_message = aiocoap.Message(code=Code.CONTENT, payload=block.encode("utf-8"))
+                            block_message.opt.block2 = aiocoap.Block2Option(idx, len(block), more=(idx < len(blocks)-1))
+
+                            # Send the block response to the client
+                            await request.respond(block_message)
+
+                        return None  # Done with blockwise response
+                    else:
+                        # If not large enough for blockwise transfer, send the whole payload
+                        return aiocoap.Message(code=Code.CONTENT, payload=json_data.encode("utf-8"))
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")
                     return aiocoap.Message(code=Code.INTERNAL_SERVER_ERROR, payload=b"Failed to fetch updates")

@@ -200,7 +200,7 @@ all chats with the telegram bot. Search for your username and get the `id` from 
           "language_code": "en"
         },
         "chat": {
-          "id": 12345678,
+          "id": 12345679,
           "first_name": "John",
           "last_name": "Doe",
           "username": "johndoe",

@@ -6,6 +6,10 @@ _Telegram_ bot API. Further, this project uses a Border Router (BR) configuratio
 device. The BR consists of a [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) and a [_Nordic_ nRF52840-Dongle](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-Dongle). This documentation provides a 
 setup guide for the application and the networking, and more in-depth explanations of the implementation itself.
 
+## Our _unique_ approach
+
+
+
 <!--
 ## Content
 * [Project Structure](#project-structure)
@@ -113,7 +117,7 @@ setup guide for the application and the networking, and more in-depth explanatio
 ## Project Structure
 
 ```
-project/digitalization
+/project-digitalization
 ├── README.md                     # Documentation
 ├── Makefile                      # Wrapper Makefile
 │
@@ -214,11 +218,12 @@ initial values. The number of users that can be added here is limited to 10, mak
 ## Getting Started
 
 You can either use the build script or manually run the application. All of these commands are intended to be used from 
-[/project-digitalization](../project-digitalization).
+the directory of this [/project-digitalization](../project-digitalization). You have to clone this repository.
 
 ### Quick Start
 
-The [build script](./build.sh) makes using the application as easy as possible.
+The [build script](./build.sh) makes using the application as easy as possible. You still have to execute the 
+prerequisite [Border Router Setup](#border-router-setup-required) manually, but that is it.
 
 1. Connect the nRF52840-DK board to your linux machine, ensure the board is powered on (status LED).
 
@@ -227,28 +232,32 @@ The [build script](./build.sh) makes using the application as easy as possible.
 sudo bash build.sh
 ```
 
-3. Use the associated numbers to navigate through the script
+3. Use the associated numbers to navigate through the script.
 
 ### Manual Process
 
-First, make sure you have **all the prerequisites fulfilled** and set the desired [configuration parameters](src/config.ini).
+First, make sure you have **all the prerequisites fulfilled**.
 
-Build the application:
+1. Set the desired [configuration parameters](src/config.ini).
+
+2. Connect the nRF52840-DK board to your linux machine, ensure the board is powered on (status LED).
+
+3. Build the application:
 ```shell
 make clean all
 ```
 
-Flash the application to the board:
+4. Flash the application to the board:
 ```shell
 make flash
 ```
 
-Open the terminal:
+5. Open the terminal:
 ```shell
 make term
 ```
 
-All in one command:
+All in one (#3 - #5) command:
 ```shell
 make clean all flash term
 ```

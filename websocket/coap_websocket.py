@@ -120,7 +120,7 @@ class CoAPResourceGet(resource.Resource):
                                 continue
 
                             # Überprüfen, ob die Nachricht mit "config" beginnt
-                            if not text.lower().startswith("config"):
+                            if not text.lower().startswith("config "):
                                 continue
 
                             # Speichern und zur Antwort hinzufügen

@@ -31,8 +31,13 @@ bool get_coap_response_status(void) {
 
 void process_config_command(const char *message) {
     char buffer[COAP_BUF_SIZE];
-    strncpy(buffer, message, COAP_BUF_SIZE);
+    snprintf(buffer, sizeof(buffer), "%s", message);
     buffer[COAP_BUF_SIZE - 1] = '\0';
+
+    if (strlen(message) >= COAP_BUF_SIZE) {
+        printf("Warning: message too long\n");
+        return;
+    }
 
     char *token = strtok(buffer, " ");
     if (!token || strcmp(token, "config") != 0) {
@@ -111,6 +116,33 @@ void process_config_command(const char *message) {
     }
 }
 
+void config_control(coap_pkt_t *pkt) {
+    if (pkt->payload_len > 0) {
+        char response[COAP_BUF_SIZE];
+
+        /*
+        snprintf(response, pkt->payload_len, "%s", pkt->payload);
+        response[pkt->payload_len] = '\0';
+        */
+
+        memcpy(response, pkt->payload, pkt->payload_len);
+
+
+        printf("Received REsponse: %s\n", response);
+
+        if (strncmp(response, "[", 1) == 0) {
+            char *msg = strtok(response, "[],");
+            while (msg) {
+                //printf("%s\n", msg);
+                puts("mist");
+                process_config_command(msg);
+                msg = strtok(NULL, "[],");
+            }
+        }
+    }
+
+}
+
 // Response handler for CoAP requests
 static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pkt, const sock_udp_ep_t *remote) {
     (void)remote;
@@ -131,29 +163,14 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
-    /* Print Payload
+    /* Print Payload */
     if (pkt->payload_len > 0) {
-        printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
+        //printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
+
+        config_control(pkt);
+
         set_coap_response_status(true);
         return;
-    }*/
-
-    if (pkt->payload_len > 0) {
-        char response[COAP_BUF_SIZE];
-        strncpy(response, (char *)pkt->payload, pkt->payload_len);
-        response[pkt->payload_len] = '\0';
-
-        printf("Received REsponse: %s\n", response);
-
-        if (strncmp(response, "[", 1) == 0) {
-            char *msg = strtok(response, "[],");
-            while (msg) {
-                process_config_command(msg);
-                msg = strtok(NULL, "[],");
-            }
-        }
-
-        set_coap_response_status(true);
     }
 
     if (msg_type == COAP_TYPE_ACK) {

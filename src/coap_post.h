@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include "config_constants.h"
+#include "net/gcoap.h"
 
 /* Explanation of the composition of COAP_BUF_SIZE, the actual content and headers of the CoAP message:
  * 8 bytes: CoAP header (message type, token, MID)
@@ -49,5 +50,7 @@ void set_coap_response_status(bool is_done);
 bool get_coap_response_status(void);
 
 int coap_post_get_updates(void);
+
+void config_control(coap_pkt_t *pkt);
 
 #endif //COAP_POST_H

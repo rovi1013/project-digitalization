@@ -105,6 +105,9 @@ static int coap_get_updates_control(const int argc, char **argv) {
             ztimer_sleep(ZTIMER_MSEC, 50);
             wait_time -= 50;
         }
+
+        //config_control();
+
         printf("CoAP handler status: %s\n", get_coap_response_status() == 0 ? "Running" : "Finished");
     }
     const uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time

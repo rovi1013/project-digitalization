@@ -7,6 +7,7 @@ import httpx
 from aiocoap import resource, Code
 import re
 import json
+import time
 
 # Only allow for WARNING logging from automatic loggers
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -75,6 +76,12 @@ class CoAPResource(resource.Resource):
 
 class CoAPResourceGet(resource.Resource):
     """CoAP Resource to handle GET requests"""
+
+    def __init__(self):
+        super().__init__()
+        self.start_time = int(time.time())  # Speichert den Startzeitpunkt des Servers
+        self.seen_dates = set()  # Set zum Speichern bereits gesendeter Nachrichten (basierend auf `date`)
+
     async def render_post(self, request):
         try:
             payload = request.payload.decode("utf-8")
@@ -93,11 +100,36 @@ class CoAPResourceGet(resource.Resource):
 
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{telegram_api_url}{telegram_bot_token}/getUpdates")
+
                 if response.status_code == 200:
                     data = response.json()
+                    new_messages = []
+
+                    for update in data.get("result", []):
+                        message = update.get("message", {})
+                        text = message.get("text", "").strip()
+                        msg_date = message.get("date", None)
+
+                        if text and msg_date:
+                            # Überprüfen, ob die Nachricht neuer als der Server-Startzeitpunkt ist
+                            if msg_date < self.start_time:
+                                continue
+
+                            # Überprüfen, ob die Nachricht bereits übermittelt wurde
+                            if msg_date in self.seen_dates:
+                                continue
+
+                            # Überprüfen, ob die Nachricht mit "config" beginnt
+                            if not text.lower().startswith("config"):
+                                continue
+
+                            # Speichern und zur Antwort hinzufügen
+                            self.seen_dates.add(msg_date)
+                            new_messages.append(text)
+
                     logging.info(f"Retrieved JSON from Telegram")
-                    logging.info(f"{json.dumps(data)}")
-                    return aiocoap.Message(code=Code.CONTENT, payload=json.dumps(data).encode("utf-8"))
+                    logging.info(f"Filtered messages: {new_messages}")
+                    return aiocoap.Message(code=Code.CONTENT, payload=str(new_messages).encode("utf-8"))
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")
                     return aiocoap.Message(code=Code.INTERNAL_SERVER_ERROR, payload=b"Failed to fetch updates")

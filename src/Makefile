@@ -1,6 +1,10 @@
 # Name of the application
 APPLICATION = project-digitalization
 
+####################################################################################################
+################################## RIOT-OS ENVIRONMENT VARIABLES ###################################
+####################################################################################################
+
 # If no BOARD is found in the environment, use this default:
 BOARD ?= nrf52840dk
 
@@ -14,6 +18,9 @@ DEVELHELP ?= 1
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
+
+# Increase default RIOT CoAP request size limit
+CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512
 
 ####################################################################################################
 ############################ GET ENVIRONMENT VARIABLES FROM config.ini #############################
@@ -42,9 +49,6 @@ CFLAGS += -DCOAP_SERVER_URI_PATH=\"$(COAP_SERVER_URI_PATH)\"
 CFLAGS += -DTEMPERATURE_NOTIFICATION_INTERVAL=$(TEMPERATURE_NOTIFICATION_INTERVAL)
 CFLAGS += -DENABLE_CONSOLE_THREAD=$(ENABLE_CONSOLE_THREAD)
 CFLAGS += -DENABLE_LED_FEEDBACK=$(ENABLE_LED_FEEDBACK)
-
-# Increase default RIOT CoAP request size limit
-CFLAGS += -DCONFIG_GCOAP_PDU_BUF_SIZE=512
 
 ####################################################################################################
 ###################################### MODULES CONFIGURATION #######################################

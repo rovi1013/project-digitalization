@@ -1,8 +1,12 @@
 # Project Digitalization (WiSe 2024/25)
 
-This is the repository for the digitalization project at the FRA-UAS. Using RIOT-OS to create a small application to 
-control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via the _Telegram_ bot API.
+This is the repository for the digitalization project 'Text your IoT Device' at the FRA-UAS. Using [RIOT-OS](https://www.riot-os.org/) 
+to create an application to control a [_Nordic_ nRF52840-DK](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK) device. Providing additional remote access via the 
+_Telegram_ bot API. Further, this project uses a Border Router (BR) configuration for network connectivity for the IoT 
+device. The BR consists of a [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) and a [_Nordic_ nRF52840-Dongle](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-Dongle). This documentation provides a 
+setup guide for the application and the networking, and more in-depth explanations of the implementation itself.
 
+<!--
 ## Content
 * [Project Structure](#project-structure)
 * [Prerequisites](#prerequisites)
@@ -41,6 +45,7 @@ control a _Nordic_ nRF52840 (DK) device. Providing additional remote access via 
   * [General Commands](#general-commands--tools)
   * [Tool valgrind](#tool-valgrind)
   * [Tool GDB](#tool-gdb)
+-->
 
 <details>
   <summary><b><span style="font-size: 2em;">Table of Contents</span></b></summary>
@@ -145,13 +150,13 @@ project/digitalization
 
 ## Prerequisites
 
-The prerequisites have to be fulfilled before the application can be run. The [Border Router Setup](#border-router-setup-networking) 
-is the only one of these which CANNOT be automated. The rest of the following prerequisites (Dependencies, Networking 
+The prerequisites have to be fulfilled before the application can be run. The [Border Router Setup](#border-router-and-websocket-setup-networking)
+is the only one of these which CANNOT be automated. The rest of the following prerequisites (Dependencies, Networking
 Setup, and Configuration File) are all automated in the [build script](build.sh) ([usage](#quick-start)).
 
 ### Border Router Setup (REQUIRED)
 For communication with the telegram bot, the nRF52840-DK board requires an internet connection. This
-connection is established by following the steps described in [Border Router Setup](#border-router-setup-networking).
+connection is established by following the steps described in [Border Router Setup](#border-router-and-websocket-setup-networking).
 
 ### Dependencies
 
@@ -182,7 +187,7 @@ sudo apt install git gcc-arm-none-eabi make gcc-multilib libstdc++-arm-none-eabi
 ### Networking Setup
 
 The application requires an interface (tap0) to be set up beforehand on the linux machine used to build this application
-and flash the [nRF52840-Dongle](#nrf52840-dongle-setup) for the [border router](#networking--border-router-setup).
+and flash the [nRF52840-Dongle](#nrf52840-dongle-setup) for the [Border Router](#networking--border-router-setup).
 ```shell
 sudo ip tuntap add dev tap0 mode tap user $(whoami) \
 sudo ip link set tap0 up \
@@ -216,10 +221,12 @@ You can either use the build script or manually run the application. All of thes
 The [build script](./build.sh) makes using the application as easy as possible.
 
 1. Connect the nRF52840-DK board to your linux machine, ensure the board is powered on (status LED).
+
 2. Open the build script, make sure to run as sudo user:
 ```shell
 sudo bash build.sh
 ```
+
 3. Use the associated numbers to navigate through the script
 
 ### Manual Process
@@ -239,6 +246,11 @@ make flash
 Open the terminal:
 ```shell
 make term
+```
+
+All in one command:
+```shell
+make clean all flash term
 ```
 
 ### On-Board Shell Commands
@@ -280,7 +292,6 @@ help
 ### Additional Project Commands
 
 List all active RIOT-OS modules:
-
 ```shell
 make info-modules
 ```
@@ -288,48 +299,54 @@ make info-modules
 
 ## Border Router and Websocket Setup (Networking)
 
-The IoT device we are using in this project (nRF52840) has 6LoWPAN (no WLAN or LAN) connectivity only, as IoT devices
-usually do. Therefore, we have to use a border router which can connect to our device and to a "normal" network. For
-this, we are using a Raspberry Pi and the nRF52840-Dongle. These two combined are the border router. More information
+The IoT device we are using in this project (nRF52840-DK) has 6LoWPAN (no WLAN or LAN) connectivity only, as IoT devices
+usually do. Therefore, we have to use a Border Router (BR) which can connect to our device and to a "normal" network. 
+For this, we are using a Raspberry Pi and the nRF52840-Dongle. These two combined are the BR. More information
 [here](#additional-networking-information).
 
 **The [Dependencies](#dependencies) and [Networking Setup](#networking-setup) prerequisites have to be fulfilled
 before this setup.**
 
-1. Set up nRF52840-Dongle 
-2. Set up Raspberry Pi for Border Router functionality 
-3. Set up Raspberry Pi for Websocket functionality
+These are the **mandatory** steps to set up networking for the application: 
+1. Set up [nRF52840-Dongle](#nrf52840-dongle-setup) (Linux machine)
+2. Set up [Raspberry Pi for Border Router](#raspberry-pi-border-router-setup) functionality (Linux machine & Raspberry Pi)
+3. Set up [Raspberry Pi for Websocket](#raspberry-pi-websocket-setup) functionality (Raspberry Pi)
 
 ### nRF52840-Dongle Setup
 
-The nRF52840-Dongle setup can only be done on a standard (x64/x86 based) Linux machine. Because we need the tool
-[nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) to flash the dongle and this tool is NOT available for ARM-based machines.
-Therefore, **this setup cannot be done on the raspberry pi**.
+The nRF52840-Dongle setup can only be done on a x64/x86-based Linux machine. Because we need the tool [nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) 
+to flash the dongle and this tool is NOT available for ARM-based machines.
 
-1. [Download](https://www.nordicsemi.com/Products/Development-tools/nRF-Util/Download#infotabs) and install nRF Util
-   by following the [documentation](https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html)
-2. Plug the nRF52840-Dongle into any USB port of your device (the x64/x86 Linux machine).
-3. Get the AllRIOT version of the `gnrc_border_router` example:
+Therefore, **this setup cannot be done on the Raspberry Pi**.
+
+1. Get the AllRIOT version of the `gnrc_border_router` example:
 ```shell
 git clone https://github.com/AllRIOT/RIOT.git AllRIOT
 ```
-4. Navigate to the gnrc_border_router directory:
+
+2. Navigate to the `gnrc_border_router` directory:
 ```shell
 cd AllRIOT/examples/gnrc_border_router
 ```
-5. Make and flash the border example to the nRF52840-Dongle:
+
+3. Plug the nRF52840-Dongle into any USB port of your device (the x64/x86 Linux machine).
+
+4. Build and flash the `gnrc_border_router` example to the nRF52840-Dongle:
 ```shell
 BOARD=nrf52840dongle make clean all flash
 ```
-6. The nRF52840-Dongle is now set up.
+
+5. **The nRF52840-Dongle is now set up.**
 
 ### Raspberry Pi Border Router Setup
 
-This setup has to be run once (and only once) to prepare the border router functionality.
+This setup has to be run to prepare the Border Router functionality of the Raspberry Pi.
 
 1. Plug the nRF52840-Dongle into any USB port of the Raspberry Pi.
+
 2. Connect the Raspberry Pi to your local network (e.g., via ethernet) and power. The rest of this setup assumes an
    ethernet connection.
+
 3. Locate the Raspberry Pi's IP address in your local network (you can use any tool, here we use arp-scan):
 ```shell
 # Get your ethernet interface name with ifconfig
@@ -345,36 +362,42 @@ sudo arp-scan -I <ethernet-interface-name> -l
 <ip-address> <mac-address> <vendor-name>
 192.168.0.213 d8:3a:dd:2b:61:79 Raspberry Pi Trading Ltd
 ```
+
 4. Connect to the Raspberry Pi via ssh with the username "riot" and enter the correct password:
 ```shell
 ssh riot@192.168.0.213
 ```
+
 5. If you are in the correct place, your console should look like this:
 ```shell
 riot@6lbr-8:~ $
 ```
-5. Clone this project on the Raspberry Pi
+
+6. Clone this project on the Raspberry Pi
 ```shell
 git clone https://github.com/rovi1013/project-digitalization.git
 ```
-6. Now the Raspberry Pi is set up and can be used as a border router.
+
+7. **Now the Raspberry Pi is set up and can be used as a Border Router.**
 
 ### Raspberry Pi Websocket Setup
 
-This setup prepares the CoAP/HTTPs websocket to run automatically on the Raspberry Pi on boot using a Linux service. 
-This can be done [automatically](websocket/raspberry_pi_setup.sh) or [manually](#manual-raspberry-pi-websocket-setup). 
-More information on the websocket can be found here: [Websocket Documentation](websocket/README.md).
+This setup intended to be done from [/websocket](./websocket) on the Raspberry Pi.
 
-All of these commands are intended to be used from [/websocket](./websocket).
+This setup prepares the CoAP/HTTPs websocket to run automatically on the Raspberry Pi on boot using a Linux service. 
+This can be done [automatically](websocket/raspberry_pi_setup.sh) or [manually](#manual-raspberry-pi-websocket-setup). More information on the websocket can be found here: 
+[Websocket Documentation](websocket/README.md).
 
 #### Automatic Raspberry Pi Websocket Setup
 
-Execute the script as sudo user:
+Execute the script as sudo user and follow the instructions:
 ```shell
 sudo bash raspberry_pi_setup.sh
 ```
 
 #### Manual Raspberry Pi Websocket Setup
+
+If you haven't cloned the project to the Raspberry Pi already ([Step 2](#raspberry-pi-border-router-setup)), do so now.
 
 1. Install python dependencies on Raspberry Pi (virtual python env has to be in .venv):
 ```shell
@@ -383,25 +406,30 @@ python -m 'venv' .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
 2. Modify  mode to make sure user 'riot' can execute python script:
 ```shell
 sudo chown -R riot:riot coap_websocket.py
 sudo chmod -R u+rwx coap_websocket.py
 ```
+
 3. Enable autorun with coap_websocket.service, copy this service file to the correct location:
 ```shell
 sudo cp coap_websocket.service /etc/systemd/system/
 ```
+
 4. Add the following lines to /etc/rc.local:
 ```shell
 sleep 1
 ip -6 addr add 2001:470:7347:c810::1234/64 dev usb0
 ```
+
 5. Rename the [config.ini.template](./src/config.ini.template) to config.ini and enter your Telegram bot token:
 ```ini
 [telegram]
 bot_token = your_telegram_bot_token
 ```
+
 6. Reload the daemon, enable and start the service:
 ```shell
 # Reload daemon
@@ -425,7 +453,7 @@ sudo systemctl restart coap_server.service
 
 As mentioned above (see [Border Router Setup](#border-router-setup)) the nRF52840-DK board is only directly connected
 to the nRF52840-Dongle. This section explains how this connection can be established. This setup has to be done every
-time you want to use the border router. **This section requires the [Raspberry-Pi Setup](#raspberry-pi-setup) &
+time you want to use the Border Router. **This section requires the [Raspberry-Pi Setup](#raspberry-pi-setup) &
 [nRF52840-Dongle Setup](#nrf52840-dongle-setup).**
 
 #### Raspberry-Pi / nRF52840-Dongle Terminal Setup
@@ -437,13 +465,13 @@ ssh riot@<network-ip-addr>
 ```shell
 cd ~/project-digitalization/RIOT
 ```
-3. Open the border router terminal on the nRF52840-Dongle:
+3. Open the Border Router terminal on the nRF52840-Dongle:
 ```shell
 dist/tools/pyterm/pyterm -p /dev/ttyACM0
 ```
 NOTE: Do not use `make term` from the `gnrc_border_router` directory!
-4. Get the global ip address of the nRF52840-Dongle; if there are multiple interfaces you can differentiate them by the
-   other parameters. For example the correct `Link type` is `wireless`. Also make sure to get the IPv6 address with
+4. Get the global ip address of the nRF52840-Dongle; if there are multiple interfaces, you can differentiate them by the
+   other parameters. For example, the correct `Link type` is `wireless`. Also make sure to get the IPv6 address with
    `scope: global`.
 ```shell
 > ifconfig
@@ -503,7 +531,7 @@ Correct IPv6 address from this example: `2001:470:7347:c318:e476:a9b:e259:a63e`
 Correct IPv6 address from this example: `2001:470:7347:c318:a41d:b3f5:5212:392f`
 
 #### Simple Ping between Dongle and Board
-From the border router terminal ([this](#raspberry-pi--nrf52840-dongle-terminal-setup)):
+From the Border Router terminal ([this](#raspberry-pi--nrf52840-dongle-terminal-setup)):
 ```shell
 ping <board-ip-address>
 # With the example address from above:
@@ -519,13 +547,17 @@ ping 2001:470:7347:c318:e476:a9b:e259:a63e
 
 ### Additional Networking Information
 
-As already established, the combination of the Raspberry Pi and nRF52840-Dongle are the "Border Router" in this setup.
+As already established, the combination of the Raspberry Pi and nRF52840-Dongle are the Border Router (BR) in this setup.
 Generally, every device that can connect to both a 6LoWPAN network and a more "standard" network like WLAN or ethernet
-could be used as a border router. In the case of this project, we are using the nRF52840-Dongle to establish a 6LoWPAN
+could be used as a BR. In the case of this project, we are using the nRF52840-Dongle to establish a 6LoWPAN
 connection with the nRF52840-DK board. The Raspberry Pi only provides an interface to allow the dongle a connection to
 either WLAN or ethernet. Specifically, the USB ports of the Raspberry Pi provide this interface. The 6LoWPAN connection 
-between the 2 boards is established automatically, in a real world application such a border router would connect many 
+between the 2 boards is established automatically, in a real world application such a BR would connect many 
 IoT devices to one network.
+
+> On this RIOT BR two interfaces are present. A wired interface represents the serial link between Linux and your mote. 
+> A wireless interface represents the 802.15.4 radio link. <br>
+> <cite>From [RIOT-OS border router example](https://github.com/AllRIOT/RIOT/tree/master/examples/gnrc_border_router)</cite>
 
 ![Network Diagram](./assets/network-diagram.svg)
 
@@ -650,7 +682,7 @@ information. This can be used on Windows machines to run the application.
 
 Make sure the docker daemon is running.
 
-To build the image, simply use the [Dockerfile](./Dockerfile):
+To build the image, use the [Dockerfile](./Dockerfile):
 ```shell
 docker build -t riot-app .
 ```
@@ -811,88 +843,3 @@ You can control the LEDs by their associated number written on the board (LED1, 
 Inferentially the maximum number of target LEDs for the commands above is 4.
 --->
 
-
-## TODOs
-
-- [x] Which instant messaging protocol should we use?
-    - Telegram
-- [ ] Which modules from RIOT-OS do we need?
-- [x] Create the project architecture.
-- [ ] Develop the application.
-- [ ] Present the project.
-
-
-## Timeline
-
-### 2024-11-25: Architecture
-
-- Submission and presentation of your architecture
-
-### 2025-01-20: Demo
-
-- Present your walking skeleton (incl. demo)
-
-### 2025-02-10: Presentation
-
-- Give a short presentation on your work (live demo?)
-
-### 2025-02-21: Submission
-
-- Final version of the code is in the repository
-- You have granted access to me
-- Send me your documentation
-
-
-## Quick Notes
-
-SAUL (Sensor Actuator Uber Layer) API ist wohl wichtig
-
-HTTP from device to (some) Gateway, Gateway translates to HTTPS.
-No HTTP on RIOT-OS, simple Telegram HTTP client implementation necessary.
-
-Change Temperature Sensor to onboard (cpu) temperature sensor
-
-Memory für device name nicht dynamisch allokieren, statisch ist besser!
-
-
-## Ask the Prof
-
-### Module ``shell_commands``
-
-[Makefile](src/Makefile) module ``shell_commands`` error:
-
-```shell
-Error - using unknown modules: shell_commands
-make: *** [/home/vincent/Workspace/project-digitalization/RIOT//Makefile.include:742: ..module-check] Error 1
-```
-
-Despite ``make info-modules`` showing that ``shell_commands`` is available. And the module is working in ``Tutorials/task-01`` on the same machine.
-
-**Answer**: Wrong name, correct name is `shell_cmds_default`
-
-### Use of "jsmn" library
-
-The jsmn library (parse JSON) is not included in RIOT OS despite it being mentioned in the [documentation](https://doc.riot-os.org/group__pkg__jsmn.html).
-
-**Answer**: Not a module but a package. Use `USEPKG` instead of `USEMODULE`. Refer to RIOT/tests/ for example
-implementations of most features (modules and packages) for the correct and up-to-date implementation.
-
-### Makefile location
-
-Is there any way to use the project structure where the Makefile is not in the same directory as the main.c file?
-
-**Answer**: Yes, use wrapper Makefiles.
-
-
-# Random Documentation Leftovers
-
-## Temperature Sensor DHT20 (NOT IN USE)
-Not supported by RIOT-OS currently, which is why this project is using the CPU temperature.
-
-### PINs
-| DHT20 Pin | Function       | nRF52840-DK Pin           |
-|-----------|----------------|---------------------------|
-| VCC       | Power (3.3V)   | 3V3 on nRF52840-DK        |
-| GND       | Ground         | GND                       |
-| SDA       | I2C Data Line  | GPIO pin with I2C support |
-| SCL       | I2C Clock Line | GPIO pin with I2C support |

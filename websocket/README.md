@@ -44,6 +44,18 @@ And adjust the following setting:
 bot_token = your_telegram_bot_token
 ```
 
+### Telegram Password
+
+Create a `.env` file in [/websocket](../websocket):
+```shell
+touch .env
+```
+
+Write the password you want to use for your telegram bot in there:
+```dotenv
+PASSWORD=<your_password>
+```
+
 ### Auto-run CoAP Server
 
 The [CoAP Server](./coap_websocket.py) can be set up to run automatically on boot of the Raspberry PI. There are 2 

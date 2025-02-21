@@ -50,6 +50,7 @@ VENV_DIR=".venv"
 REQUIREMENTS_FILE="requirements.txt"
 CONFIG_TEMPLATE="../src/config.ini.template"
 CONFIG_FILE="../src/config.ini"
+ENV_FILE=".env"
 
 # Copy the service file
 echo "📂 Copying $SERVICE_FILE to $SYSTEMD_PATH"
@@ -131,5 +132,21 @@ if [ -f "$CONFIG_FILE" ]; then
         echo "⚠️ No bot token entered. Skipping update."
     fi
 fi
+
+# Prompt the user for a telegram password
+while true; do
+    echo "✏️  Please enter a new password (at least 8 characters long):"
+    read -r PASSWORD_INPUT
+
+    # Check if the password meets the length requirement
+    if [ ${#PASSWORD_INPUT} -ge 8 ]; then
+        # Overwrite (or create) the .env file with the new password
+        echo "PASSWORD=$PASSWORD_INPUT" > "$ENV_FILE"
+        echo "✅ Password has been set in $ENV_FILE."
+        break  # Exit loop when a valid password is entered
+    else
+        echo "⚠️ Password too short! It must be at least 8 characters long. Try again."
+    fi
+done
 
 echo "✅ Setup completed successfully! 🚀"

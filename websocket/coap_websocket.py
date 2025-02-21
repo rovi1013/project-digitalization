@@ -4,14 +4,19 @@ import logging
 
 import aiocoap
 import httpx
-from aiocoap import resource, Code
 import re
 import time
+from aiocoap import resource, Code
+from dotenv import load_dotenv
 
 # Only allow for WARNING logging from automatic loggers
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+
+# Get Telegram password from .env file (default = password)
+load_dotenv()
+telegram_password = os.getenv("PASSWORD") or "password"
 
 # Configure logging
 LOG_FILE = os.path.join(os.path.dirname(__file__), "coap_server.log")
@@ -80,9 +85,9 @@ class CoAPResourceGet(resource.Resource):
     def __init__(self):
         super().__init__()
         self.last_update = start_time                               # Track the system time
-        self.chats = {}                                             # Store chats as a list [{first_name_1, chat_id_1},{first_name_2, chat_id_3},...] <- max 10
-        self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
-        self.password = "password12"                                # "Secret"
+        self.chats = {}                                             # Store chats as a list <- max 10
+        self.latest_values = {"interval": 2, "feedback": 0}         # Store latest config values
+        self.password = telegram_password                           # Telegram password
         self.update_storage_threshold = 50                          # The maximum number of updates stored on server
 
     async def render_post(self, request):

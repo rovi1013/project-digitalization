@@ -98,6 +98,9 @@ class CoAPResourceGet(resource.Resource):
             telegram_api_url = data.get("url", "").strip()
             telegram_bot_token = data.get("token", "").strip()
 
+            telegram_api_url = re.sub(r"[^\x20-\x7E]", "", telegram_api_url)
+            telegram_bot_token = re.sub(r"[^\x20-\x7E]", "", telegram_bot_token)
+
             if not telegram_api_url or not telegram_bot_token:
                 logging.error("Missing required fields in request")
                 return aiocoap.Message(code=Code.BAD_REQUEST, payload=b"Missing required fields")

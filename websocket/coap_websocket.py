@@ -78,7 +78,7 @@ class CoAPResourceGet(resource.Resource):
 
     def __init__(self):
         super().__init__()
-        self.last_update = None                                     # Track the system time
+        self.last_update = time.time()                              # Track the system time
         self.chats = {}                                             # Store chats as a list [{first_name_1, chat_id_1},{first_name_2, chat_id_3},...] <- max 10
         self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
         self.password = "password12"                                # "Secret"

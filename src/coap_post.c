@@ -108,6 +108,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
+    /* Handle Acknowledgements */
     if (msg_type == COAP_TYPE_ACK) {
         if (pkt->hdr->code == COAP_CODE_EMPTY) {
             return;
@@ -116,12 +117,9 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         return;
     }
 
-    /* Print Payload */
+    /* Handle Payload */
     if (pkt->payload_len > 0) {
-        //printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
-
         config_control(pkt);
-
         set_coap_response_status(true);
         return;
     }

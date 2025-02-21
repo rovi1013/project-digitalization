@@ -823,3 +823,10 @@ represents False or True in this case.
 The last command removes the user from receiving notifications from the application. By typing any other message he will
 receive them again as a single message of any kind being sent to the bot is enough for him to register the user again.
 
+## Webhook
+Once a change from CoAP to HTTPS is being implemented on the application, a webhook needs to be setup so that the newly
+implemented HTTPS-server on the board can receive text messages sent from the users. A webhook is set up by calling
+/setWebhook on the Telegram bot. Furthermore, the logic implemented on the websocket to evaluate the messages of the users
+needs to be implemented on the function that will be called by the webhook.
+
+Further details on what arguments need to be passed to this call can be find here: https://core.telegram.org/bots/api#setwebhook

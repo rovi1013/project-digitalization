@@ -129,7 +129,10 @@ class CoAPResourceGet(resource.Resource):
 
                     logging.info(f"Retrieved JSON from Telegram")
                     logging.info(f"Filtered messages: {new_messages}")
-                    return aiocoap.Message(code=Code.CONTENT, payload=b""+new_messages[0].encode("utf-8"))
+
+                    my_string = ','.join(new_messages)
+
+                    return aiocoap.Message(code=Code.CONTENT, payload=b""+my_string.encode("utf-8"))
                     #return aiocoap.Message(code=Code.CONTENT, payload=str(new_messages).encode("utf-8"))
                     #test
                 else:

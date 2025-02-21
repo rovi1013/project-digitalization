@@ -1,24 +1,24 @@
 # Python Websocket Documentation
 
-The Python websocket is running on the raspberry PI which, in combination with the nRF52840-Dongle, is used as a 
-border router for this application. Further information on the border router can be found in the [main documentation](../README.md).
-But there are no ties between the Raspberry PI as border router and the Raspberry PI as websocket. Technically, you 
-could use two different devices for these two applications (border router & websocket). In this documentation, the 
-websocket is assumed to be running on the same Raspberry PI as the border router for simplicity reasons.
+The Python websocket is running on the Raspberry Pi which, in combination with the nRF52840-Dongle, is used as a 
+Border Router (BR) for this application. Further information on the BR can be found in the [Main Documentation](../README.md).
+But there are no ties between the Raspberry Pi as BR and the Raspberry Pi as websocket. Technically, you 
+could use two different devices for these two applications (BR & websocket). In this documentation, the 
+websocket is assumed to be running on the same Raspberry Pi as the BR for simplicity reasons.
 
-The Python websocket is a temporary solution to allow communication with Telegram via https. Because currently (Q1 2025) 
-RIOT-OS does not support TLS, and therefore is not able to communicate via https. This solution is kept as minimal as 
+The Python websocket is a temporary solution to allow communication with Telegram via HTTPs. Because currently (Q1 2025) 
+RIOT-OS does not support TLS, and therefore is not able to communicate via HTTPs. This solution is kept as minimal as 
 possible to make a transition to a native solution using RIOT-OS with TLS as easy as possible. 
 
 We have implemented a few "quality of life" features for this temporary solution anyway to make using this 
-version as easy to use as possible. 
+version as easy as possible. 
 
 ## Prerequisites 
 
-These prerequisites can be executed manually or via the [setup script](./raspberry_pi_setup.sh) (see [here](#automate-websocket-setup-on-the-raspberry-pi)). 
+These prerequisites can be executed manually or via the [setup script](./raspberry_pi_setup.sh) (see [here](#automate-websocket-setup-on-the-raspberry-pi)).
 You can also fulfil some prerequisites manually and use the setup script for the rest. All the setup commands used here 
 are meant to be executed from the [/websocket](../websocket) directory. They also ONLY have to be executed on the 
-Raspberry PI which is also the border router.
+Raspberry Pi which is also the Border Router.
 
 ### Python Requirements
 
@@ -26,6 +26,7 @@ Python version 3.12.3 was used throughout this project.
 
 Setup Python environment and install requirements:
 ```shell
+cd project-digitalization/websocket/
 python -m 'venv' .venv
 source ./venv/bin/activate
 pip install -r requirements.txt
@@ -58,15 +59,21 @@ PASSWORD=<your_password>
 
 ### Auto-run CoAP Server
 
-The [CoAP Server](./coap_websocket.py) can be set up to run automatically on boot of the Raspberry PI. There are 2 
+The [CoAP Server](./coap_websocket.py) can be set up to run automatically on boot of the Raspberry Pi. There are 2 
 requirements for this auto-run functionality.
 
-1. Move the [CoAP Server Service](./coap_websocket.service) to `/etc/systemd/system` (requires sudo privileges):
+1. Modify  mode to make sure user 'riot' can execute python script:
+```shell
+sudo chown -R riot:riot coap_websocket.py
+sudo chmod -R u+rwx coap_websocket.py
+```
+
+2. Move the [CoAP Server Service](./coap_websocket.service) to `/etc/systemd/system` (requires sudo privileges):
 ```shell
 sudo cp coap_websocket.service /etc/systemd/system
 ```
 
-2. Append the following lines to `/etc/rc.local` for automatic (sudo) ip address set up on boot:
+3. Append the following lines to `/etc/rc.local` for automatic (sudo) ip address set up on boot:
 ```shell
 sleep 1
 ip -6 addr add 2001:470:7347:c810::1234/64 dev usb0
@@ -75,7 +82,7 @@ exit 0
 
 Make sure there is only one `exit 0` at the very end of the file.
 
-Now you can restart the `daemon` plus enable and restart the _new_ service:
+4. Now you can restart the `daemon` plus enable and restart the new service:
 ```shell
 sudo systemctl daemon-reload
 sudo systemctl enable coap_websocket.service
@@ -83,10 +90,10 @@ sudo systemctl restart coap_websocket.service
 ```
 
 
-## Automate Websocket Setup on the Raspberry PI
+## Automate Websocket Setup on the Raspberry Pi
 
 To further increase the ease of use and especially ease of setup, you can use the [setup script](./raspberry_pi_setup.sh) 
-to automate the setup on the Raspberry PI. This script will automatically run the prerequisites and start the server.
+to automate the setup on the Raspberry Pi. This script will automatically run the prerequisites and start the server.
 
 This script requires sudo privileges to run:
 ```shell
@@ -259,7 +266,7 @@ all chats with the telegram bot. Search for your username and get the `id` from 
           "language_code": "en"
         },
         "chat": {
-          "id": 12345678,
+          "id": 12345679,
           "first_name": "John",
           "last_name": "Doe",
           "username": "johndoe",

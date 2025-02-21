@@ -133,13 +133,14 @@ static int modify_config(const int argc, char **argv) {
     // Print out help page
     if (strcmp(name, "help") == 0) {
         puts("Usage:");
+        puts("  config help                         (Print this message)");
         puts("  config show                         (Show the current configuration)");
         puts("  config interval <minutes>           (Set temperature notification interval)");
         puts("  config feedback <0|1>               (Enable/disable LED feedback)");
         puts("  config bot-token <token>            (Set Telegram bot token)");
-        puts("  config set-chat <name> <id>         (Set chat ID for a name)");
-        puts("  config remove-chat <id_or_name>     (Remove chat entry by ID or name)");
-        puts("  config telegram-url <url>           (Set Telegram API URL)");
+        puts("  config set-chat <name> <id>         (Create a new name-ID pair or update an existing one)");
+        puts("  config remove-chat <id_or_name>     (Remove a chat entry by ID or name)");
+        puts("  config telegram-url <url>           (Set Telegram bot API URL)");
         puts("  config address <IPv6>               (Set CoAP server address)");
         puts("  config port <port>                  (Set CoAP server port)");
         puts("  config uri-path <path>              (Set CoAP server URI path)");

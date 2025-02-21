@@ -20,47 +20,6 @@ Moreover, the thread responsible for sending automated Telegram notifications—
 
 Overall, we have developed an application that can easily be adapted into a native HTTPS solution while staying true to the core principles of IoT.
 
-
-## Content
-* [Project Structure](#project-structure)
-* [Prerequisites](#prerequisites)
-  * [Border Router Setup](#border-router-setup-required)
-  * [Dependencies](#dependencies)
-  * [Networking Setup](#networking-setup)
-  * [Configuration File](#configuration-file)
-* [Getting Started](#getting-started)
-  * [Quick Start](#quick-start)
-  * [Manual Process](#manual-process)
-  * [On-Board Shell Commands](#on-board-shell-commands)
-  * [Additional Project Commands](#additional-project-commands)
-* [Border Router and Websocket Setup (Networking)](#border-router-and-websocket-setup-networking)
-  * [nRF52840-Dongle Setup](#nrf52840-dongle-setup)
-  * [Raspberry Pi Border Router Setup](#raspberry-pi-border-router-setup)
-  * [Raspberry Pi Websocket Setup](#raspberry-pi-websocket-setup)
-  * [Check Dongle Connectivity](#check-dongle-connectivity)
-  * [More Networking Details](#additional-networking-information)
-* [Main Application](#main-application)
-  * [Source Classes](#source-classes)
-  * [Utility Classes](#utility-classes)
-* [Python Websocket](#python-websocket)
-* [RIOT-OS Modules](#riot-os-modules)
-  * [SAUL ([S]ensor [A]ctuator [U]ber [L]ayer)](#saul-sensor-actuator-uber-layer)
-  * [shell](#shell)
-  * [ztimer](#ztimer)
-  * [gcoap](#gcoap)
-  * [udp](#udp)
-  * [thread](#thread)
-  * [Data Type phydat_t](#data-type-phydat_t)
-* [Docker Alternative](#docker-alternative)
-* [Troubleshooting](#troubleshooting)
-  * [RIOT-OS Git Submodule](#riot-os-git-submodule-not-loading)
-  * [nRF Device Locked](#nrf-device-locked)
-* [Application Insights and Analysis](#application-insights-and-analysis)
-  * [General Commands](#general-commands--tools)
-  * [Tool valgrind](#tool-valgrind)
-  * [Tool GDB](#tool-gdb)
-
-
 <details>
   <summary><b><span style="font-size: 2em;">Table of Contents</span></b></summary>
   <b><span style="font-size: 1.5em; margin-left: 36px"><a href="#project-structure">Project Structure</a></span></b>

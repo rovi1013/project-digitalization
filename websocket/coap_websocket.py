@@ -119,7 +119,7 @@ class CoAPResourceGet(resource.Resource):
                     text = message.get("text", "").strip()
                     chat_id = message.get("chat", {}).get("id", "")
                     first_name = message.get("chat", {}).get("first_name", "")
-                    timestamp = message.get("date")
+                    timestamp = message.get("date", None)
 
                     if not text:
                         continue
@@ -174,7 +174,7 @@ class CoAPResourceGet(resource.Resource):
                         updated_values["feedback"] = value
 
                 # Step 5: If a change occurred, update last_update and send an update
-                if timestamp < self.last_update.timestamp():
+                if timestamp < self.last_update:
                     self._fancy_logging(updated_values, removal_chat_id, added_chats)
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 

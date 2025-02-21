@@ -258,7 +258,7 @@ class CoAPResourceGet(resource.Resource):
                 log_message += f"\n- {key.capitalize()}: {value}"
         if self.chats:
             log_message += "\nRegistered Users:"
-            for chat_id, first_name in self.chats:
+            for chat_id, first_name in self.chats.items():
                 log_message += f"\n- {first_name} (Chat ID: {chat_id})"
         if added_chats:
             log_message += f"\nNew User(s):"

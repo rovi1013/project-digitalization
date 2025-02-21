@@ -6,7 +6,6 @@ import aiocoap
 import httpx
 from aiocoap import resource, Code
 import re
-import json
 import time
 
 # Only allow for WARNING logging from automatic loggers
@@ -31,7 +30,7 @@ logging.info(f"Using CoAP server IP: {coap_server_ip}")
 
 
 class CoAPResource(resource.Resource):
-    """CoAP Resource to handle POST requests"""
+    """CoAP Resource to handle telegram POST requests"""
     async def render_post(self, request):
         try:
             payload = request.payload.decode("utf-8")
@@ -75,7 +74,7 @@ class CoAPResource(resource.Resource):
 
 
 class CoAPResourceGet(resource.Resource):
-    """CoAP Resource to handle GET requests"""
+    """CoAP Resource to handle telegram GET requests"""
 
     def __init__(self):
         super().__init__()

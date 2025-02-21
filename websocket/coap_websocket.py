@@ -6,7 +6,7 @@ import aiocoap
 import httpx
 from aiocoap import resource, Code
 import re
-from datetime import datetime
+import time
 
 # Only allow for WARNING logging from automatic loggers
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -27,7 +27,7 @@ logging.basicConfig(
 # Get IPv6 address from systemd environment
 coap_server_ip = os.getenv("COAP_SERVER_IP", "::1")  # Default to localhost (::1) if unset
 logging.info(f"Using CoAP server IP: {coap_server_ip}")
-start_time = datetime.now()
+start_time = int(time.time())
 
 
 class CoAPResource(resource.Resource):
@@ -124,19 +124,21 @@ class CoAPResourceGet(resource.Resource):
                     if not text:
                         continue
 
+                    if timestamp and int(timestamp) > self.last_update:
+                        # Handle "remove me"
+                        print(f"test {timestamp}")
+                        if text.lower() == "remove me":
+                            if chat_id in self.chats:
+                                removal_chat_id = chat_id
+                                del self.chats[chat_id]
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
+                            else:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
+                            continue
+
                     # Handle new user registration
                     if chat_id and first_name and chat_id not in self.chats:
                         added_chats[chat_id] = first_name
-
-                    # Handle "remove me"
-                    if text.lower() == "remove me":
-                        if chat_id in self.chats:
-                            removal_chat_id = chat_id
-                            del self.chats[chat_id]
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
-                        else:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
-                        continue
 
                     # Process "config" messages
                     if not text.lower().startswith("config "):
@@ -154,31 +156,34 @@ class CoAPResourceGet(resource.Resource):
                         #await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
                         continue
 
-                    # Validate input values before updating
-                    if name == "interval":
-                        try:
-                            interval_value = int(value)
-                            if not (1 <= interval_value <= 120):
-                                raise ValueError
-                            self.latest_values["interval"] = interval_value
-                            updated_values["interval"] = interval_value
-                        except ValueError:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
-                            continue
+                    if timestamp and int(timestamp) > self.last_update:
+                        # Validate input values before updating
+                        if name == "interval":
+                            try:
+                                interval_value = int(value)
+                                if not (1 <= interval_value <= 120):
+                                    raise ValueError
+                                if interval_value != self.latest_values["interval"]:
+                                    updated_values["interval"] = interval_value
+                            except ValueError:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
+                                continue
 
-                    elif name == "feedback":
-                        if value not in ["0", "1"]:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
-                            continue
-                        self.latest_values["feedback"] = value
-                        updated_values["feedback"] = value
+                        elif name == "feedback":
+                            if value not in ["0", "1"]:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
+                                continue
+                            if value != self.latest_values["feedback"]:
+                                updated_values["feedback"] = value
 
-                # Step 5: If a change occurred, update last_update and send an update
-                if timestamp < self.last_update:
-                    self._fancy_logging(updated_values, removal_chat_id, added_chats)
+                # Step 5: If a change occurred, send update
+                if updated_values or added_chats or removal_chat_id is not None:
+                    print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
+                    self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
+                    self.latest_values.update(updated_values)  # Update latest stored values
+                    self.chats.update(added_chats) # Update chat IDs
+                    self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
-
-                    self.last_update = datetime.now()  # Update the timestamp as soon as a change occurs
                     return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
                 # Step 6: If nothing changed, return "No Updates"
@@ -202,12 +207,12 @@ class CoAPResourceGet(resource.Resource):
         if "feedback" in updates:
             encoded_list.append(f"f{updates['feedback']}")  # Use "f" for feedback
 
-        if self.chats:  # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
-            chat_string = ";".join([f"{first_name}:{chat_id}" for chat_id, first_name in self.chats.items()])
+        if added_chats:  # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
+            chat_string = ";".join([f"{first_name}:{chat_id}" for chat_id, first_name in added_chats.items()])
             encoded_list.append(chat_string)
 
         if removal_chat_id:
-            encoded_list.append(f"{removal_chat_id}")
+            encoded_list.append(f"r{removal_chat_id}")
 
         encoded_string = ";".join(encoded_list)  # Separate multiple updates with ";"
         return encoded_string.encode("utf-8")
@@ -218,13 +223,6 @@ class CoAPResourceGet(resource.Resource):
             del self.chats[chat_id]
             return True
         return False
-
-    def _cleanup_old_updates(self):
-        """Remove update IDs to prevent memory bloat if there are more than update_storage_threshold"""
-        if len(self.processed_updates) > self.update_storage_threshold:
-            oldest_keys = sorted(self.processed_updates.keys(), key=lambda k: self.processed_updates[k])[:50]
-            for key in oldest_keys:
-                del self.processed_updates[key]
 
     def _fancy_logging(self, updates, removal_chat_id, added_chats):
         """Make the logging of changes fancy"""

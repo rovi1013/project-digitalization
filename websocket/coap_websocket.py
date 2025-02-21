@@ -27,6 +27,7 @@ logging.basicConfig(
 # Get IPv6 address from systemd environment
 coap_server_ip = os.getenv("COAP_SERVER_IP", "::1")  # Default to localhost (::1) if unset
 logging.info(f"Using CoAP server IP: {coap_server_ip}")
+start_time = time.time()
 
 
 class CoAPResource(resource.Resource):
@@ -78,7 +79,7 @@ class CoAPResourceGet(resource.Resource):
 
     def __init__(self):
         super().__init__()
-        self.last_update = time.time()                              # Track the system time
+        self.last_update = start_time                               # Track the system time
         self.chats = {}                                             # Store chats as a list [{first_name_1, chat_id_1},{first_name_2, chat_id_3},...] <- max 10
         self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
         self.password = "password12"                                # "Secret"
@@ -86,12 +87,6 @@ class CoAPResourceGet(resource.Resource):
 
     async def render_post(self, request):
         try:
-            # Step 1: Check if enough time has passed before making an API call
-            if self.last_update - self.last_update < 0.1:
-                logging.info("No new updates since last request, skipping Telegram API call and CoAP message.")
-                return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
-
-            # Step 2: Extract Telegram API URL and Token
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
@@ -124,6 +119,7 @@ class CoAPResourceGet(resource.Resource):
                     text = message.get("text", "").strip()
                     chat_id = message.get("chat", {}).get("id", "")
                     first_name = message.get("chat", {}).get("first_name", "")
+                    timestamp = message.get("date")
 
                     if not text:
                         continue
@@ -178,11 +174,11 @@ class CoAPResourceGet(resource.Resource):
                         updated_values["feedback"] = value
 
                 # Step 5: If a change occurred, update last_update and send an update
-                if updated_values or removal_chat_id or added_chats:
-                    self.last_update = time.time()  # Update the timestamp as soon as a change occurs
+                if timestamp < self.last_update:
                     self._fancy_logging(updated_values, removal_chat_id, added_chats)
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 
+                    self.last_update = time.time()  # Update the timestamp as soon as a change occurs
                     return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
                 # Step 6: If nothing changed, return "No Updates"

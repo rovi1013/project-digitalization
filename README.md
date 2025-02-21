@@ -826,29 +826,32 @@ _Telegram_ Bot API [Documentation](https://core.telegram.org/bots/api)
 
 ### Bot Description
 
-TODO
-<!---Change to match real usage 
-This bot is used to send and receive messages to and from a small (proof-of-concept) IoT device. These messages can be 
-used to control the device running on RIOT-OS. See "Commands" for a list of all available controls.
+The bot does not require any further configuration after its creation. The handling of all available commands is being
+taken care of by the websocket.
 
-### Bot Commands
+If another user wants to subscribe to the bot, all he needs to do is to write a message in the chat.
+With the next update cycle the application recognizes the new user and updates its configuration to include this new user
+when sending a message with the current temperature.
 
-Turn on an LED:
+Here is a list of available commands for the user configure the settings of the main application:
 ```shell
-led <1-4> <1-4> ... on
+config [password] [interval] [value]
+config [password] [feedback] [value]
+remove me
 ```
 
-Turn off an LED:
-```shell
-led <1-4> <1-4> ... off
-```
+The password is a secret that needs to be shared with all user deemed eligible by the admin of the application.
+It can only be edited by the admin in the environment file of the websocket.
 
-Toggle an LED:
-```shell
-led <1-4> <1-4> ... toggle
-```
+The default behaviour of the bot is to send a message with the currently measured temperature to all users subscribed
+to the bot in an interval of 2 minutes. By entering the first command the user can change the interval to a value between
+1 and 120. Lower values are not possible to deliver in time and higher values are restricted to protect the user from increasing
+the interval too much. The reason for that is that further configuration changes are only being read by the application
+with the next interval.
 
-You can control the LEDs by their associated number written on the board (LED1, LED2, LED3, LED4 -> \<1-4>).
-Inferentially the maximum number of target LEDs for the commands above is 4.
---->
+The second command instructs the application to use the lamp when sending a message or not. A simple value of 0 or 1
+represents False or True in this case.
+
+The last command removes the user from receiving notifications from the application. By typing any other message he will
+receive them again as a single message of any kind being sent to the bot is enough for him to register the user again.
 

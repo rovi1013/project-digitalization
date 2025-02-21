@@ -174,8 +174,8 @@ class CoAPResourceGet(resource.Resource):
                             if value != self.latest_values["feedback"]:
                                 updated_values["feedback"] = value
 
-                # Step 5: If a change occurred, update last_update and send an update
-                if updated_values or added_chats:
+                # Step 5: If a change occurred, send update
+                if updated_values or added_chats or removal_chat_id:
                     print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
                     self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
                     self.latest_values.update(updated_values)  # Update latest stored values

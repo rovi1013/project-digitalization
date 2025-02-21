@@ -175,11 +175,12 @@ class CoAPResourceGet(resource.Resource):
                                 updated_values["feedback"] = value
 
                 # Step 5: If a change occurred, update last_update and send an update
-                if updated_values is not None and updated_values:
+                if updated_values is not None and updated_values or added_chats:
                     print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
-                    self.latest_values.update(updated_values)  # Update latest stored values
-                    self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
                     self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
+                    self.latest_values.update(updated_values)  # Update latest stored values
+                    self.chats.update(added_chats) # Update chat IDs
+                    self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
                     return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
@@ -220,13 +221,6 @@ class CoAPResourceGet(resource.Resource):
             del self.chats[chat_id]
             return True
         return False
-
-    def _cleanup_old_updates(self):
-        """Remove update IDs to prevent memory bloat if there are more than update_storage_threshold"""
-        if len(self.processed_updates) > self.update_storage_threshold:
-            oldest_keys = sorted(self.processed_updates.keys(), key=lambda k: self.processed_updates[k])[:50]
-            for key in oldest_keys:
-                del self.processed_updates[key]
 
     def _fancy_logging(self, updates, removal_chat_id, added_chats):
         """Make the logging of changes fancy"""

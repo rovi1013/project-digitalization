@@ -8,9 +8,19 @@ setup guide for the application and the networking, and more in-depth explanatio
 
 ## Our _unique_ approach
 
+Our application has been designed to avoid any external dependencies. The idea is that once TLS support becomes available for RIOT, the project can seamlessly function independently of WebSockets.
+
+Currently, our approach involves sending a CoAP message to our WebSocket, which then forwards the message to the Telegram bot. However, with a native RIOT HTTPS implementation, this process can be directly translated by replacing CoAP messages with HTTPS requests.
+
+The application is capable of storing and managing the Telegram URL, bot token, and chat IDs on its own. Additionally, users can configure the application via various Telegram commands, allowing for direct communication with the Telegram bot in the future—without requiring an intermediary step.
+
+At the same time, the application is designed to be as lightweight as possible, making it suitable for IoT devices running on battery power without frequent replacements. This efficiency is achieved through a minimalistic logic implementation and by avoiding a full-fledged CoAP server within the application.
+
+Moreover, the thread responsible for sending automated Telegram notifications—which constitutes the primary workload of the board—remains in sleep mode for most of the application's runtime. The notification intervals can be configured by an authenticated Telegram user.
+
+Overall, we have developed an application that can easily be adapted into a native HTTPS solution while staying true to the core principles of IoT.
 
 
-<!--
 ## Content
 * [Project Structure](#project-structure)
 * [Prerequisites](#prerequisites)
@@ -49,7 +59,7 @@ setup guide for the application and the networking, and more in-depth explanatio
   * [General Commands](#general-commands--tools)
   * [Tool valgrind](#tool-valgrind)
   * [Tool GDB](#tool-gdb)
--->
+
 
 <details>
   <summary><b><span style="font-size: 2em;">Table of Contents</span></b></summary>

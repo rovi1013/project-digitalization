@@ -178,6 +178,7 @@ class CoAPResourceGet(resource.Resource):
                         # Track last sender if an update is valid
                         last_sender_chat_id = chat_id
 
+                    added_chats = {}
                     # Check if we can add new users (without exceeding 10)
                     if new_chats and len(self.chats) < 10:
                         available_slots = 10 - len(self.chats)

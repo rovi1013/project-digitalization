@@ -146,8 +146,8 @@ class CoAPResourceGet(resource.Resource):
 
                     if timestamp and int(timestamp) > self.last_update:
                         # Handle "remove me"
+                        print(f"test {timestamp}")
                         if text.lower() == "remove me":
-                            print(f"text")
                             if chat_id in self.chats:
                                 removal_chat_id = chat_id
                                 del self.chats[chat_id]

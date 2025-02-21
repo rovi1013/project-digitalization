@@ -45,6 +45,18 @@ And adjust the following setting:
 bot_token = your_telegram_bot_token
 ```
 
+### Telegram Password
+
+Create a `.env` file in [/websocket](../websocket):
+```shell
+touch .env
+```
+
+Write the password you want to use for your telegram bot in there:
+```dotenv
+PASSWORD=<your_password>
+```
+
 ### Auto-run CoAP Server
 
 The [CoAP Server](./coap_websocket.py) can be set up to run automatically on boot of the Raspberry Pi. There are 2 
@@ -167,8 +179,62 @@ sudo tcpdump -i usb0 -nn udp port 5683 -X
 
 ## Websocket
 
-The [CoAP Server](./coap_websocket.py) is always listening for a CoAP request coming from the application.
+The [CoAP Websocket](./coap_websocket.py) facilitates communication between the CoAP-based application and the Telegram 
+messaging service. It acts as an intermediary, allowing IoT devices using CoAP to send and receive messages through 
+Telegram. The server listens for incoming CoAP requests, processes them asynchronously, and communicates with 
+Telegram's API.
 
+### Functionalities
+
+**User Registration:**
+* New users sending messages get automatically registered (up to 10 users max). 
+* Registered users receive updates.
+
+**User Self Remove:**
+* Users can send `remove me` via Telegram to unregister.
+
+**Configuration Update:**
+* Format: `config <password> <key> <value>`
+* Keys: interval, feedback
+* Example: `config password12 interval 5`
+
+**Logging:**
+* Logs are saved in [coap_server.log](./coap_server.log) with details of requests, errors, and updates.
+
+**Heartbeat:**
+* The server logs a heartbeat every 15 minutes to indicate that it is still running.
+
+
+### API Endpoint POST /message
+
+Handles Telegram message forwarding.
+
+The Payload has to be encoded like this:
+```shell
+url=<TELEGRAM_API_URL>&token=<BOT_TOKEN>&chat_ids=<CHAT_IDs>&text=<MESSAGE>
+```
+And chat_ids has to be a comma seperated list of chat_ids: 'chat_id_1,chat_id_2,...,chat_id_10'
+
+**Response Codes**
+* 2.05 CONTENT: Messages sent successfully.
+* 4.00 BAD REQUEST: Missing required fields.
+* 5.00 INTERNAL SERVER ERROR: Processing failure.
+
+### API Endpoint POST /update
+
+Handles Telegram-based configuration retrieval and updates.
+
+The Payload has to be encoded like this:
+```shell
+url=<TELEGRAM_API_URL>&token=<BOT_TOKEN>&chat_ids=<CHAT_IDs>&text=<MESSAGE>
+```
+And chat_ids has to be a comma seperated list of chat_ids: 'chat_id_1,chat_id_2,...,chat_id_10'
+
+**Response Codes**
+* 2.03 VALID: No updates available.
+* 2.05 CONTENT: Updates retrieved successfully.
+* 4.00 BAD REQUEST: Missing required fields.
+* 5.00 INTERNAL SERVER ERROR: Processing failure.
 
 <!--
 Run the application:

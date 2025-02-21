@@ -570,7 +570,6 @@ IoT devices to one network.
 
 ![Network Diagram](./assets/network-diagram.svg)
 
-
 ## Main Application
 
 The main application running on the nRF52840-DK using RIOT-OS.

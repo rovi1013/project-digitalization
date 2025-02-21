@@ -212,7 +212,7 @@ class CoAPResourceGet(resource.Resource):
             encoded_list.append(chat_string)
 
         if removal_chat_id:
-            encoded_list.append(f"{removal_chat_id}")
+            encoded_list.append(f"r{removal_chat_id}")
 
         encoded_string = ";".join(encoded_list)  # Separate multiple updates with ";"
         return encoded_string.encode("utf-8")

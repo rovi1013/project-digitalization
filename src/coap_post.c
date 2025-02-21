@@ -37,25 +37,27 @@ void process_config_command(const char *token) {
     // Changing LED-Feedback to either 0 or 1
     if (token[0] == 'f' && (token[1] == '0' || token[1] == '1')) {
         printf("Feedback received: %s\n", token);
-        config_set_led_feedback(token+1);
+        //config_set_led_feedback(token+1);
 
     // Changing the Interval timer to a value between 1 or 120
-    } else if (token[0] == 'i' && isdigit(token[1])) {
+    } else if (token[0] == 'i' && isdigit((int)token[1])) {
         printf("Interval received: %s\n", token);
-        config_set_notification_interval(token+1);
+        //config_set_notification_interval(token+1);
 
     // Removing a User from receiving notifications
-    } else if (token[0] == 'r' && isdigit(token[1])) {
+    } else if (token[0] == 'r' && isdigit((int)token[1])) {
         printf("Remove received: %s\n", token);
-        config_remove_chat_by_id_or_name(token+1);
+        //config_remove_chat_by_id_or_name(token+1);
 
     // Adding a User to receiving notifications
     } else {
         printf("Addition received: %s\n", token);
-        char *colon = strchr(token, ":");
-        if (colon && (colon - token) <= 15 && isdigit(*(colon+1))) {
+        char *colon = strchr(token, ':');
+        if (colon && (colon - token) <= 15 && isdigit((int)colon+1)) {
             *colon = '\0';
-            config_set_chat_id(token, colon);
+            printf("Token: %s\n", token);
+            printf("Colon: %s\n", colon+1);
+            //config_set_chat_id(token, colon);
         }
 
 
@@ -74,7 +76,7 @@ void config_control(coap_pkt_t *pkt) {
         return;
     }
 
-    if (strcmp(response, "Messages sent successfully") == 0 || strcmp(response, "noUpdate") == 0) {
+    if (strcmp(response, "Messages sent successfully") == 0 || strcmp(response, "No Updates") == 0) {
         printf("Received status message: %s\n", response);
         return;
     }

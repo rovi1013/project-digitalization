@@ -10,7 +10,7 @@ setup guide for the application and the networking, and more in-depth explanatio
 
 Our application has been designed to avoid any external dependencies. The idea is that once TLS support becomes available for RIOT, the project can seamlessly function independently of WebSockets.
 
-Currently, our approach involves sending a CoAP message to our WebSocket, which then forwards the message to the Telegram bot. However, with a native RIOT HTTPS implementation, this process can be directly translated by replacing CoAP messages with HTTPS requests.
+Currently, our approach involves sending a CoAP request to our WebSocket, which then forwards the request to the Telegram bot. However, with a native RIOT HTTPS implementation, this process can be directly translated by replacing CoAP requests with HTTPS requests. Additionally, an HTTPS server needs to be implemented within the application to evaluate the messages sent by the telegram server via a webhook. Some of the WebSocket processing logic must be integrated into the application as well.
 
 The application is capable of storing and managing the Telegram URL, bot token, and chat IDs on its own. Additionally, users can configure the application via various Telegram commands, allowing for direct communication with the Telegram bot in the future—without requiring an intermediary step.
 

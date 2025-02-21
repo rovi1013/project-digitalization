@@ -181,8 +181,6 @@ class CoAPResourceGet(resource.Resource):
                     print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
                     self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
                     self.latest_values.update(updated_values)  # Update latest stored values
-                    if removal_chat_id is not None:
-                        del added_chats[removal_chat_id]
                     self.chats.update(added_chats) # Update chat IDs
                     self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)

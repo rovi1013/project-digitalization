@@ -87,7 +87,7 @@ class CoAPResourceGet(resource.Resource):
     async def render_post(self, request):
         try:
             # Step 1: Check if enough time has passed before making an API call
-            if self.last_update and time.time() - self.last_update < 0.1:
+            if self.last_update - self.last_update < 0.1:
                 logging.info("No new updates since last request, skipping Telegram API call and CoAP message.")
                 return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
 

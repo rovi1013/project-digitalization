@@ -312,43 +312,70 @@ minimum number of decimal places is determined. The minimum number of decimal pl
 
 Sends CoAP-requests and handles the responses.
 
-### coap_control
-* The main method that needs to be called for sending requests
-* Expects 6 arguments:
-  * command: The command used to access the control
-  * type: The request type (GET|POST) supported
-  * address: The ipv6-adress of the websocket
-  * port: The port of the websocket
-  * path: The path of the websocket (e.g. /send_message)
-  * data: The target destination information (the Telegram Server) required by the websocket as well as the chat_ids and the text message
-* Initializes the request by utilizing the gcoap library
-* Prepares the payload in case of a POST request
-* Sends the message via _send and checks if the sending was successfull
+### set_coap_response_status
+* Setter for the variable coap_response_status
 
-### _send
-* Sends the request to the given destination
-* Expects 6 arguments:
-  * buf: Buffer
-  * len: Length
-  * *addr_str: Adress
-  * *port_str: Port
-  * *ctx: Context
-  * tl: Socket Type
-* Utilizes _parse_endpoint to reformat the given adress and port for gcoap. The details are saved in the variable remote
-* The number of bytes sent is returned
+### get_coap_response_status
+* Getter for the variable coap_response_status
 
-### _sending
-* An alternative implementation of _send 
-* Necessary for the response handling as the server adress and port are not available as a string
-* TODO: Needs to be merged with _send by reworking the code base of coap_control
+### process_config_command
+* Analyzes a given token and configures variables from config.ini accordingly
+* Expects 1 argument:
+  * *token: The token that needs to be analyzed
+* The configuration is performed by calling the corresponding functions from configuration.h
 
-### _parse_endpoint
-* Parses a given server address and port into a readable format for gcoap
-* Utilize the netutils package to save the new details in the variable remote
+### config_control
+* Prepares the payload data and divides it into substrings if necessary
+* Expects 1 argument:
+  * *pkt: The CoAP packet
+* Copies the payload of the websocket response into the variable named "response"
+* Checks if the response contains an expected message that needs to further analysis
+* If the message contains configuration info, it is divided into substrings, if necessary, and passed on to process_config_command
 
-### _resp_handler
-* Handler to take care of any response received from the websocket
-* Necessary to investigate potential issues like timeouts or error codes
+### coap_response_handler
+* Handles the incoming responses from the websocket
+* Expects 3 arguments:
+  * *memo: The request memo type
+  * *pkt: The CoAP packet
+  * *remote: Target Destination (the Websocket)
+* Gets context from memo
+* Handles Timeouts
+* Handles Acknowledgements
+* Handles Payloads
+* Handles Block wise response handling
+
+### coap_prepare_packet
+* Prepares the packet before it is being sent
+* Expects 3 arguments
+  * *pkt: The CoAP packet
+  * *uri_path: The path to the websocket
+  * *payload: The payload for the transmission
+* The request is created with gcoap
+* The message type is set to Confirmable
+* Then the payload is added to the request
+
+### coap_send_request
+* Sends the request to target destination
+* Expects 1 argument
+  * *pkt: The CoAp packet
+* Preparing the CoAP destination
+* Sending the Request to the target destination
+* On error an error message is returned, otherwise a success statement
+
+### coap_post_send
+* The control function that orcestrates all sub processes
+* Expects 2 arguments
+  * *message: The message to send
+  * *recipient: The chat_ids (the recipients) of the message
+* First the URI Path is built
+* Then the chat ID(s) are determined
+* After that the payload is built
+* Followed by the preparation of the CoAP packet
+* Finally, the request is sent
+
+### coap_post_get_updates
+* Similar to coap_post_send, but it does not require input
+* Is used to fetch updates from the bot by calling getUpdates via the websocket
 
 
 ## Class configuration

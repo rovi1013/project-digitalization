@@ -27,6 +27,7 @@ static msg_t main_msg_queue[MAIN_QUEUE_SIZE];
 static msg_t coap_msg_queue[MAIN_QUEUE_SIZE];
 
 char coap_thread_stack[THREAD_STACK_SIZE];
+char buffer_temp[CLASS_COAP_BUFFER_SIZE];
 
 #if ENABLE_CONSOLE_THREAD == 1
 static msg_t cmd_msg_queue[MAIN_QUEUE_SIZE];
@@ -40,15 +41,20 @@ void *coap_thread(void *arg) {
     while (1) {
         const uint32_t start_time = ztimer_now(ZTIMER_MSEC);
 
-        char buffer_temp[CLASS_COAP_BUFFER_SIZE];
+        memset(buffer_temp, 0, CLASS_COAP_BUFFER_SIZE);
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
         cpu_temperature_formatter(&temp, CALL_FROM_CLASS_COAP, buffer_temp, CLASS_COAP_BUFFER_SIZE);
 
-        const int res = coap_post_send(buffer_temp, "all");
-        handle_error(__func__, res);
+        // Fetch updates from Telegram
+        const int update_res = coap_post_get_updates();
+        handle_error(__func__, update_res);
 
-        if (res == COAP_SUCCESS) {
+        // Send CoAP message
+        const int send_res = coap_post_send(buffer_temp, "all");
+        handle_error(__func__, send_res);
+
+        if (send_res == COAP_SUCCESS) {
             if (app_config.enable_led_feedback) {
                 led_control_execute(0, "on");
             }

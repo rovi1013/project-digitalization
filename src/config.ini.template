@@ -11,6 +11,6 @@ uri_path = /message
 [settings]
 board = nrf52840dk
 temperature_notification_interval = 5
-enable_console_thread = 1
-enable_led_feedback = 1
+enable_console_thread = 0
+enable_led_feedback = 0
 verbose = 0

@@ -16,11 +16,9 @@
 #include "configuration.h"
 #include "utils/error_handler.h"
 
-#define CONFIG_PASSWORD "password123"
-
 coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
 static bool coap_response_status = false;
-char response[300];
+char response[COAP_UPDATE_SIZE];
 
 // Set CoAP response handler status
 void set_coap_response_status(const bool is_done) {
@@ -32,6 +30,7 @@ bool get_coap_response_status(void) {
     return coap_response_status;
 }
 
+// Process the 4 different types of configuration updates triggered by user updates
 void process_config_command(const char *token) {
     // Changing LED-Feedback to either 0 or 1
     if (token[0] == 'f' && (token[1] == '0' || token[1] == '1')) {
@@ -63,11 +62,11 @@ void process_config_command(const char *token) {
     }
 }
 
-
-void config_control(coap_pkt_t *pkt) {
+// Handle POST response from user updates
+void config_control(const coap_pkt_t *pkt) {
     memset(response, 0, sizeof(response));
 
-    if (pkt->payload_len < 300) {
+    if (pkt->payload_len < COAP_UPDATE_SIZE) {
         memcpy(response, pkt->payload, pkt->payload_len);
         response[pkt->payload_len] = '\0';
     } else {
@@ -80,8 +79,7 @@ void config_control(coap_pkt_t *pkt) {
         return;
     }
 
-    printf("Received status message: %s\n", response);
-
+    // Semicolons divide POST-response
     char *token = strtok(response, ";");
     while (token != NULL) {
         process_config_command(token);
@@ -233,7 +231,7 @@ static int coap_send_request(const coap_pkt_t *pkt) {
     return COAP_SUCCESS;
 }
 
-// Create a CoAP POST request with a given message and specific chat_id.
+// Create a CoAP POST request with a given message and specific recipient.
 int coap_post_send(const char *message, const char *recipient) {
     set_coap_response_status(false);
 
@@ -276,7 +274,7 @@ int coap_post_send(const char *message, const char *recipient) {
 }
 
 
-/* Sending a post request to websocket to make a get-request to fetch updates */
+// Sending a POST request to websocket to make a get-request to fetch updates
 int coap_post_get_updates(void) {
     set_coap_response_status(false);
 

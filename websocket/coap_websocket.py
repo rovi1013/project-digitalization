@@ -176,6 +176,7 @@ class CoAPResourceGet(resource.Resource):
                 # Step 5: If a change occurred, update last_update and send an update
                 if timestamp < self.last_update:
                     self._fancy_logging(updated_values, removal_chat_id, added_chats)
+                    print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 
                     self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs

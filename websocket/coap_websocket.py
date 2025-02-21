@@ -226,8 +226,8 @@ class CoAPResourceGet(resource.Resource):
         if "feedback" in updates:
             encoded_list.append(f"f{updates['feedback']}")  # Use "f" for feedback
 
-        if self.chats: # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
-            chat_string = ";".join([f"{chat['first_name']}:{chat['chat_id']}" for chat in self.chats])
+        if self.chats:  # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
+            chat_string = ";".join([f"{first_name}:{chat_id}" for chat_id, first_name in self.chats.items()])
             encoded_list.append(chat_string)
 
         if removal_chat_id:
@@ -238,10 +238,9 @@ class CoAPResourceGet(resource.Resource):
 
     def _remove_user(self, chat_id):
         """Remove a user by chat_id from chats"""
-        for chat in self.chats:
-            if chat["chat_id"] == chat_id:
-                self.chats.remove(chat)
-                return True
+        if chat_id in self.chats:
+            del self.chats[chat_id]
+            return True
         return False
 
     def _cleanup_old_updates(self):
@@ -259,8 +258,8 @@ class CoAPResourceGet(resource.Resource):
                 log_message += f"\n- {key.capitalize()}: {value}"
         if self.chats:
             log_message += "\nRegistered Users:"
-            for chat in self.chats:
-                log_message += f"\n- {chat['first_name']} (Chat ID: {chat['chat_id']})"
+            for chat_id, first_name in self.chats:
+                log_message += f"\n- {first_name} (Chat ID: {chat_id})"
         if added_chats:
             log_message += f"\nNew User(s):"
             for chat_id, first_name in added_chats.items():

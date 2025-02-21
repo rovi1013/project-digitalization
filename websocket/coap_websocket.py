@@ -78,12 +78,11 @@ class CoAPResourceGet(resource.Resource):
 
     def __init__(self):
         super().__init__()
-        self.processed_updates = {}                                 # Store already processed update IDs
+        self.last_update = None                                     # Track the system time
         self.chats = {}                                             # Store chats as a list [{first_name_1, chat_id_1},{first_name_2, chat_id_3},...] <- max 10
         self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
         self.password = "password12"                                # "Secret"
         self.update_storage_threshold = 50                          # The maximum number of updates stored on server
-        self.last_sent_update = None
 
     async def render_post(self, request):
         try:
@@ -111,6 +110,13 @@ class CoAPResourceGet(resource.Resource):
                     last_sender_chat_id = None
                     new_chats = {}
 
+                    if self.last_update is None:
+                        self.last_update = time.time()
+
+                    updated_values = {}
+                    removal_chat_id = None
+                    added_chats = {}
+
                     for update in data.get("result", []):
                         update_id = update.get("update_id")
                         message = update.get("message", {})
@@ -118,17 +124,15 @@ class CoAPResourceGet(resource.Resource):
                         chat_id = message.get("chat", {}).get("id", "")
                         first_name = message.get("chat", {}).get("first_name", "")
 
-                        # Skip if text is empty or already processed
-                        if not text or update_id in self.processed_updates:
+                        # Ignore empty messages
+                        if not text:
                             continue
 
-                        self.processed_updates[update_id] = time.time()
-
-                        # Handle new user registration
+                        # Handle new user registration (no password needed)
                         if chat_id and first_name and chat_id not in self.chats:
-                            new_chats.update({chat_id: first_name})
+                            added_chats[chat_id] = first_name
 
-                        # Process "remove me" functionality
+                        # Handle "remove me" command
                         if text.lower() == "remove me":
                             if chat_id in self.chats:
                                 removal_chat_id = chat_id
@@ -138,95 +142,60 @@ class CoAPResourceGet(resource.Resource):
                                 await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
                             continue
 
-                        # Process "config" functionality
+                        # Process "config" messages
                         if not text.lower().startswith("config "):
                             continue
 
                         # Extract message components
                         parts = text.split(" ", 3)
                         if len(parts) < 4:
-                            continue # Ensure message is correctly formatted
+                            continue
 
-                        _, password, functionality, value = parts
+                        _, password, name, value = parts
 
-                        # Validate the password
+                        # Validate the password (only required for "config" updates)
                         if password != self.password:
                             logging.warning(f"Invalid password received: {password}")
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
-                            continue  # Skip processing if password is incorrect
+                            continue
 
                         # Validate input values before updating
-                        if functionality == "interval":
+                        if name == "interval":
                             try:
                                 interval_value = int(value)
                                 if not (1 <= interval_value <= 120):
-                                    raise ValueError  # If out of range, trigger error handling
+                                    raise ValueError
                                 self.latest_values["interval"] = interval_value
                                 updated_values["interval"] = interval_value
                             except ValueError:
-                                logging.error(f"Invalid interval configuration {interval_value} from chat {chat_id}.")
                                 await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
                                 continue
 
-                        elif functionality == "feedback":
+                        elif name == "feedback":
                             if value not in ["0", "1"]:
-                                logging.error(f"Invalid feedback configuration {value} from chat {chat_id}.")
                                 await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
                                 continue
                             self.latest_values["feedback"] = value
                             updated_values["feedback"] = value
 
-                        # Track last sender if an update is valid
-                        last_sender_chat_id = chat_id
+                    # If last_update exists and no changes were made since then, return "No Updates"
+                    if self.last_update and time.time() - self.last_update < 0.1:  # Small time buffer
+                        logging.info("No new updates since last check, skipping CoAP message.")
+                        return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
 
-                    added_chats = {}
-                    # Check if we can add new users (without exceeding 10)
-                    if new_chats and len(self.chats) < 10:
-                        available_slots = 10 - len(self.chats)
-                        added_chats = dict(list(new_chats.items())[:available_slots])  # Limit new additions
-                        self.chats.update(added_chats)  # Add allowed users
-                        for chat_id in added_chats:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been registered.")
-                    elif new_chats:
-                        for chat_id in new_chats:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Chat limit reached. You cannot register.")
-
-                    # Cleanup old updates
-                    self._cleanup_old_updates()
-
-                    # Ensure last_sent_update exists
-                    if not hasattr(self, "last_sent_update"):
-                        self.last_sent_update = None  # Initialize if it doesn't exist
-
-                    if updated_values or removal_chat_id is not None or (added_chats and len(added_chats) > 0):
-                        new_update_data = {
-                            "interval": updated_values.get("interval"),
-                            "feedback": updated_values.get("feedback"),
-                            "removal": removal_chat_id,
-                            "added_chats": added_chats
-                        }
-
-                        # Compare with last sent update, only send if there's a new update
-                        if self.last_sent_update == new_update_data:
-                            logging.info("No new updates since last request, skipping CoAP message.")
-                            return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
-
-                        # Store this as the last sent update
-                        self.last_sent_update = new_update_data
-
-                        # Log changes and encode message
-                        self._fancy_logging(updated_values, removal_chat_id, added_chats)
+                    # If changes exist, process and send update
+                    if updated_values or removal_chat_id or added_chats:
+                        self._fancy_logging(updated_values, removal_chat_id, added_chats)  # Log applied changes
                         compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 
-                        if last_sender_chat_id:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, last_sender_chat_id, "Update(s) applied.")
+                        if chat_id:
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Update(s) applied.")
 
                         return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
-                    # If nothing changed at all
+                    # If absolutely nothing changed, return "No Updates"
                     logging.info("No changes detected, nothing sent via CoAP.")
                     return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
-
 
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")

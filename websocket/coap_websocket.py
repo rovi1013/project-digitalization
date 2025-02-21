@@ -154,32 +154,33 @@ class CoAPResourceGet(resource.Resource):
                         #await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
                         continue
 
-                    # Validate input values before updating
-                    if name == "interval":
-                        try:
-                            interval_value = int(value)
-                            if not (1 <= interval_value <= 120):
-                                raise ValueError
-                            self.latest_values["interval"] = interval_value
-                            updated_values["interval"] = interval_value
-                        except ValueError:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
-                            continue
+                    if timestamp and int(timestamp) > self.last_update:
+                        # Validate input values before updating
+                        if name == "interval":
+                            try:
+                                interval_value = int(value)
+                                if not (1 <= interval_value <= 120):
+                                    raise ValueError
+                                if interval_value != self.latest_values["interval"]:
+                                    updated_values["interval"] = interval_value
+                            except ValueError:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
+                                continue
 
-                    elif name == "feedback":
-                        if value not in ["0", "1"]:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
-                            continue
-                        self.latest_values["feedback"] = value
-                        updated_values["feedback"] = value
+                        elif name == "feedback":
+                            if value not in ["0", "1"]:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
+                                continue
+                            if value != self.latest_values["feedback"]:
+                                updated_values["feedback"] = value
 
                 # Step 5: If a change occurred, update last_update and send an update
-                if timestamp > self.last_update:
+                if updated_values is not None and updated_values:
                     print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
-                    self._fancy_logging(updated_values, removal_chat_id, added_chats)
-                    compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
-
+                    self.latest_values.update(updated_values)  # Update latest stored values
                     self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
+                    self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
+                    compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
                     return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
                 # Step 6: If nothing changed, return "No Updates"

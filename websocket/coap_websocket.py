@@ -86,116 +86,105 @@ class CoAPResourceGet(resource.Resource):
 
     async def render_post(self, request):
         try:
+            # Step 1: Check if enough time has passed before making an API call
+            if self.last_update and time.time() - self.last_update < 0.1:
+                logging.info("No new updates since last request, skipping Telegram API call and CoAP message.")
+                return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
+
+            # Step 2: Extract Telegram API URL and Token
             payload = request.payload.decode("utf-8")
             data = {k: v for k, v in (item.split("=") for item in payload.split("&"))}
 
             telegram_api_url = data.get("url", "").strip()
             telegram_bot_token = data.get("token", "").strip()
 
-            telegram_api_url = re.sub(r"[^\x20-\x7E]", "", telegram_api_url)
-            telegram_bot_token = re.sub(r"[^\x20-\x7E]", "", telegram_bot_token)
-
             if not telegram_api_url or not telegram_bot_token:
                 logging.error("Missing required fields in request")
-                logging.error(f"url='{telegram_api_url}', bot_token=[HIDDEN]'")
                 return aiocoap.Message(code=Code.BAD_REQUEST, payload=b"Missing required fields")
 
+            # Step 3: Make the API call to get updates from Telegram
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{telegram_api_url}{telegram_bot_token}/getUpdates")
 
-                if response.status_code == 200:
-                    data = response.json()
-
-                    if self.last_update is None:
-                        self.last_update = time.time()
-
-                    updated_values = {}
-                    removal_chat_id = None
-                    added_chats = {}
-
-                    for update in data.get("result", []):
-                        message = update.get("message", {})
-                        text = message.get("text", "").strip()
-                        chat_id = message.get("chat", {}).get("id", "")
-                        first_name = message.get("chat", {}).get("first_name", "")
-
-                        # Ignore empty messages
-                        if not text:
-                            continue
-
-                        # Handle new user registration (no password needed)
-                        if chat_id and first_name and chat_id not in self.chats:
-                            added_chats[chat_id] = first_name
-
-                        # Handle "remove me" command
-                        if text.lower() == "remove me":
-                            if chat_id in self.chats:
-                                removal_chat_id = chat_id
-                                del self.chats[chat_id]
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
-                            else:
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
-                            continue
-
-                        # Process "config" messages
-                        if not text.lower().startswith("config "):
-                            continue
-
-                        # Extract message components
-                        parts = text.split(" ", 3)
-                        if len(parts) < 4:
-                            continue
-
-                        _, password, name, value = parts
-
-                        # Validate the password (only required for "config" updates)
-                        if password != self.password:
-                            logging.warning(f"Invalid password received: {password}")
-                            #await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
-                            continue
-
-                        # Validate input values before updating
-                        if name == "interval":
-                            try:
-                                interval_value = int(value)
-                                if not (1 <= interval_value <= 120):
-                                    raise ValueError
-                                self.latest_values["interval"] = interval_value
-                                updated_values["interval"] = interval_value
-                            except ValueError:
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
-                                continue
-
-                        elif name == "feedback":
-                            if value not in ["0", "1"]:
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
-                                continue
-                            self.latest_values["feedback"] = value
-                            updated_values["feedback"] = value
-
-                    # If last_update exists and no changes were made since then, return "No Updates"
-                    if self.last_update and time.time() - self.last_update < 0.1:  # Small time buffer
-                        logging.info("No new updates since last check, skipping CoAP message.")
-                        return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
-
-                    # If changes exist, process and send update
-                    if updated_values or removal_chat_id or added_chats:
-                        self._fancy_logging(updated_values, removal_chat_id, added_chats)  # Log applied changes
-                        compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
-
-                        if chat_id:
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Update(s) applied.")
-
-                        self.last_update = time.time()
-                        return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
-
-                    # If absolutely nothing changed, return "No Updates"
-                    logging.info("No changes detected, nothing sent via CoAP.")
-                    return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
-
-                else:
+                if response.status_code != 200:
                     logging.error(f"Failed to fetch updates: {response.text}")
                     return aiocoap.Message(code=Code.INTERNAL_SERVER_ERROR, payload=b"Failed to fetch updates")
+
+                data = response.json()
+                updated_values = {}
+                removal_chat_id = None
+                added_chats = {}
+
+                # Step 4: Process Telegram updates (without update_id)
+                for update in data.get("result", []):
+                    message = update.get("message", {})
+                    text = message.get("text", "").strip()
+                    chat_id = message.get("chat", {}).get("id", "")
+                    first_name = message.get("chat", {}).get("first_name", "")
+
+                    if not text:
+                        continue
+
+                    # Handle new user registration
+                    if chat_id and first_name and chat_id not in self.chats:
+                        added_chats[chat_id] = first_name
+
+                    # Handle "remove me"
+                    if text.lower() == "remove me":
+                        if chat_id in self.chats:
+                            removal_chat_id = chat_id
+                            del self.chats[chat_id]
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
+                        else:
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
+                        continue
+
+                    # Process "config" messages
+                    if not text.lower().startswith("config "):
+                        continue
+
+                    # Extract message components
+                    parts = text.split(" ", 3)
+                    if len(parts) < 4:
+                        continue
+
+                    _, password, name, value = parts
+
+                    if password != self.password:
+                        logging.warning(f"Invalid password received: {password}")
+                        #await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
+                        continue
+
+                    # Validate input values before updating
+                    if name == "interval":
+                        try:
+                            interval_value = int(value)
+                            if not (1 <= interval_value <= 120):
+                                raise ValueError
+                            self.latest_values["interval"] = interval_value
+                            updated_values["interval"] = interval_value
+                        except ValueError:
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
+                            continue
+
+                    elif name == "feedback":
+                        if value not in ["0", "1"]:
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
+                            continue
+                        self.latest_values["feedback"] = value
+                        updated_values["feedback"] = value
+
+                # Step 5: If a change occurred, update last_update and send an update
+                if updated_values or removal_chat_id or added_chats:
+                    self.last_update = time.time()  # Update the timestamp as soon as a change occurs
+                    self._fancy_logging(updated_values, removal_chat_id, added_chats)
+                    compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
+
+                    return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
+
+                # Step 6: If nothing changed, return "No Updates"
+                logging.info("No changes detected, nothing sent via CoAP.")
+                return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
 
         except Exception as e:
             logging.exception("Exception occurred while fetching updates")

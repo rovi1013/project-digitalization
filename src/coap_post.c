@@ -12,7 +12,6 @@
 #include "net/coap.h"
 #include "coap_post.h"
 
-
 #include "configuration.h"
 #include "utils/error_handler.h"
 

@@ -1,0 +1,16 @@
+[telegram]
+bot_token = your_telegram_bot_token
+chat_ids =
+url = https://api.telegram.org/bot
+
+[websocket]
+address = 2001:470:7347:c810::1234
+port = 5683
+uri_path = /message
+
+[settings]
+board = nrf52840dk
+temperature_notification_interval = 5
+enable_console_thread = 1
+enable_led_feedback = 1
+verbose = 0

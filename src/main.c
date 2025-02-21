@@ -7,12 +7,13 @@
 #include <ztimer.h>
 
 #include "msg.h"
+#include "thread.h"
 
 #include "led_control.h"
-#include "cpu_temperature.h"
 #include "cmd_control.h"
+#include "configuration.h"
+#include "cpu_temperature.h"
 #include "coap_post.h"
-#include "thread.h"
 #include "utils/error_handler.h"
 
 #ifdef BOARD_NATIVE
@@ -35,48 +36,36 @@ char console_thread_stack[THREAD_STACK_SIZE];
 void *coap_thread(void *arg) {
     (void) arg;
     msg_init_queue(coap_msg_queue, MAIN_QUEUE_SIZE);
-    const uint32_t temperature_notification_interval = TEMPERATURE_NOTIFICATION_INTERVAL*60000;
 
     while (1) {
-        uint32_t start_time = ztimer_now(ZTIMER_MSEC);
+        const uint32_t start_time = ztimer_now(ZTIMER_MSEC);
 
         char buffer_temp[CLASS_COAP_BUFFER_SIZE];
         cpu_temperature_t temp;
         cpu_temperature_get(&temp);
         cpu_temperature_formatter(&temp, CALL_FROM_CLASS_COAP, buffer_temp, CLASS_COAP_BUFFER_SIZE);
 
-        coap_request_t request;
-        init_coap_request(&request);
-        coap_response_status = false;
-        const int res = coap_post_send(&request, buffer_temp);
-
+        const int res = coap_post_send(buffer_temp, "all");
         handle_error(__func__, res);
 
-#if ENABLE_LED_FEEDBACK == 1
         if (res == COAP_SUCCESS) {
-            led_control_execute(0,"on");
-            uint32_t wait_time = 5000;  // Max wait time
-            while (!coap_response_status && wait_time > 0) {
-                ztimer_sleep(ZTIMER_MSEC, 100);
-                wait_time -= 100;
+            if (app_config.enable_led_feedback) {
+                led_control_execute(0, "on");
             }
-
-            led_control_execute(0,"off");
-        }
-#else
-        if (res == COAP_SUCCESS) {
-            uint32_t wait_time = 5000;  // Max wait time
-            while (!coap_response_status && wait_time > 0) {
-                ztimer_sleep(ZTIMER_MSEC, 100);
-                wait_time -= 100;
+            uint32_t wait_time = 1000;  // Max wait time
+            while (!get_coap_response_status() && wait_time > 0) {
+                ztimer_sleep(ZTIMER_MSEC, 50);
+                wait_time -= 50;
             }
         }
-#endif
-
         uint32_t elapsed_time = ztimer_now(ZTIMER_MSEC) - start_time;  // Compute elapsed time
-        printf("CoAP thread running. Elapsed time: %lu ms\n", (unsigned long)elapsed_time);
+        printf("CoAP communication took %lu ms to finish.\n", (unsigned long)elapsed_time);
 
-        ztimer_sleep(ZTIMER_MSEC, temperature_notification_interval);
+        if (app_config.enable_led_feedback) {
+            led_control_execute(0, "off");
+        }
+
+        ztimer_sleep(ZTIMER_MSEC, config_get_notification_interval() * 60000);
     }
     return NULL;
 }
@@ -93,20 +82,21 @@ void *console_thread(void *arg) {
 int main(void) {
     // Wait 1 second to allow for everything to load correctly
     ztimer_sleep(ZTIMER_MSEC, 1000);
-    // Initialize devices
-    led_control_init();
-    cpu_temperature_init();
+
+    // Initialize the configuration
+    config_init();
+
     msg_init_queue(main_msg_queue, MAIN_QUEUE_SIZE);
 
-    // Thread #1
-    thread_create(coap_thread_stack, THREAD_STACK_SIZE,
-        7, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
-
-    // Thread #2:
+    // Thread #1: Console
 #if ENABLE_CONSOLE_THREAD == 1
     thread_create(console_thread_stack, THREAD_STACK_SIZE,
         7, THREAD_CREATE_STACKTEST, console_thread, NULL, "ConsoleThread");
 #endif
+
+    // Thread #2: CoAP
+    thread_create(coap_thread_stack, THREAD_STACK_SIZE,
+        6, THREAD_CREATE_STACKTEST, coap_thread, NULL, "CoapThread");
 
     msg_t msg;
     while (1) {

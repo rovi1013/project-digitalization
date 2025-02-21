@@ -22,8 +22,8 @@ QUIET ?= 1
 # Telegram variables
 TELEGRAM_BOT_TOKEN := $(shell awk -F' = ' '/bot_token/ {print $$2}' config.ini)
 TELEGRAM_CHAT_IDS := $(shell awk -F' = ' '/chat_ids/ {print $$2}' config.ini)
+TELEGRAM_SERVER_URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
 # CoAP Variables
-COAP_SERVER_URL := $(shell awk -F' = ' '/url/ {print $$2}' config.ini)
 COAP_SERVER_ADDRESS := $(shell awk -F' = ' '/address/ {print $$2}' config.ini)
 COAP_SERVER_PORT := $(shell awk -F' = ' '/port/ {print $$2}' config.ini)
 COAP_SERVER_URI_PATH := $(shell awk -F' = ' '/uri_path/ {print $$2}' config.ini)
@@ -35,7 +35,7 @@ ENABLE_LED_FEEDBACK := $(shell awk -F' = ' '/enable_led_feedback/ {print $$2}' c
 # Pass variables as C macros
 CFLAGS += -DTELEGRAM_BOT_TOKEN=\"$(TELEGRAM_BOT_TOKEN)\"
 CFLAGS += -DTELEGRAM_CHAT_IDS=\"$(TELEGRAM_CHAT_IDS)\"
-CFLAGS += -DCOAP_SERVER_URL=\"$(COAP_SERVER_URL)\"
+CFLAGS += -DTELEGRAM_SERVER_URL=\"$(TELEGRAM_SERVER_URL)\"
 CFLAGS += -DCOAP_SERVER_ADDRESS=\"$(COAP_SERVER_ADDRESS)\"
 CFLAGS += -DCOAP_SERVER_PORT=\"$(COAP_SERVER_PORT)\"
 CFLAGS += -DCOAP_SERVER_URI_PATH=\"$(COAP_SERVER_URI_PATH)\"
@@ -59,35 +59,51 @@ USEMODULE += saul_reg
 USEMODULE += saul_nrf_temperature
 endif
 
-# Use shell modules only if shell is enabled
+############### SHELL & DEBUGGING ###############
+# Only if shell is enabled
 ifeq ($(ENABLE_CONSOLE_THREAD),1)
+# Core shell functionality
 USEMODULE += shell
 USEMODULE += shell_cmds_default
+
+# Process and network statistics
 USEMODULE += ps
 USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
+
+# Debugging tools for networking
+USEMODULE += gnrc_icmpv6_echo  # Enables ping (ICMPv6 echo requests)
+USEMODULE += shell_cmd_gnrc_udp  # Allows UDP interaction via shell
 endif
 
-# CoAP Modules
-USEMODULE += gcoap
-USEMODULE += netutils
-USEMODULE += uri_parser
-USEMODULE += gnrc_udp
-
-# Networking Modules
-USEMODULE += gnrc_ipv6_router
+############### NETWORKING ###############
+# Core IPv6 networking
 USEMODULE += gnrc_ipv6
+USEMODULE += gnrc_ipv6_router
+USEMODULE += gnrc_ipv6_default
 USEMODULE += gnrc_netif
+
+# UDP and Routing
 USEMODULE += gnrc_udp
 USEMODULE += gnrc_rpl
+
+# Network Interface Management
 USEMODULE += netdev_default
 USEMODULE += auto_init_gnrc_netif
+
+# ICMPv6
 USEMODULE += gnrc_icmpv6_error
-USEMODULE += gnrc_ipv6_default
+
+# DNS Resolution
 USEMODULE += sock_dns
 USEMODULE += gnrc_ipv6_nib_dns
 USEMODULE += auto_init_sock_dns
+
+############### COAP ###############
+USEMODULE += gcoap
+USEMODULE += netutils
+USEMODULE += uri_parser
 
 # Custom module with additional utilities
 DIRS += utils
@@ -106,6 +122,7 @@ SRC += led_control.c
 SRC += cmd_control.c
 SRC += cpu_temperature.c
 SRC += coap_post.c
+SRC += configuration.c
 
 # RIOT makefile
 include $(RIOTBASE)/Makefile.include

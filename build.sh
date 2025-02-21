@@ -7,7 +7,7 @@ UPDATE_SCRIPT="$SCRIPT_DIR/websocket/update_chat_ids.py"
 CHECKS_DONE_FILE="/tmp/build_env_setup_done"
 
 # Define requirements
-REQUIRED_PACKAGES=("git" "gcc-arm-none-eabi" "make" "gcc-multilib" "libstdc++-arm-none-eabi-newlib" "openocd" "gdb-multiarch" "doxygen" "wget" "unzip" "python3-serial")
+REQUIRED_PACKAGES=("git" "gcc-arm-none-eabi" "make" "gcc-multilib" "libstdc++-arm-none-eabi-newlib" "openocd" "gdb-multiarch" "doxygen" "wget" "unzip" "python3-serial" "gnome-terminal")
 INTERFACE="tap0"
 
 # Default Environment Variables

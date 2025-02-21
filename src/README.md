@@ -43,14 +43,48 @@ Manages LED control using SAUL abstraction.
 
 ## Class cpu_temperature
 
-Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/temp.html))
+Read the CPU temperature data using SAUL abstraction.
 
 ### cpu_temperature_t
-* temperature: The temperature of the CPU.
-* scale: Scale of the temperature measurement (10^scale).
-* device: Name of the device the measurement is obtained from.
-* timestamp: Time of the measurement (Time starts at application start).
-* status: Status of the measurement, 0 is success, negative values indicate an error (see **Error Handling** in [Utility README](./utils/README.md)).
+
+<table>
+    <thead>
+        <tr>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: left;">Type</th>
+            <th style="text-align: left;">Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>temperature</td>
+            <td>int16_t</td>
+            <td>The temperature of the device.</td>
+        </tr>
+        <tr>
+            <td>scale</td>
+            <td>int8_t</td>
+            <td>Scale of the temperature measurement (10^scale).</td>
+        </tr>
+        <tr>
+            <td>device</td>
+            <td>char</td>
+            <td>Name of the device the measurement is obtained from.</td>
+        </tr>
+        <tr>
+            <td>timestamp</td>
+            <td>char</td>
+            <td>Time of the measurement (Time starts at application start).</td>
+        </tr>
+        <tr>
+            <td>status</td>
+            <td>char</td>
+            <td>Status of the measurement using custom error codes.</td>
+        </tr>
+    </tbody>
+</table>
+
+More information about errors: see **Error Handling** in [Utility README](./utils/README.md).
 
 ### cpu_temperature_init
 * Initializes CPU temperature sensor.
@@ -65,7 +99,7 @@ Reads the CPU temperature data using SAUL abstraction. ([Temp sensor](https://do
 * Format for status == 0: [\<time>] The temperature of \<device> is \<temperature> °C
 * Format for status < 0: [\<time>] Error: \<error> (Device: \<device>)
 
-## Class coap_control
+## Class coap_post
 
 Sends CoAP-requests and handles the responses.
 
@@ -100,9 +134,213 @@ Sends CoAP-requests and handles the responses.
 * TODO: Needs to be merged with _send by reworking the code base of coap_control
 
 ### _parse_endpoint
-* Parses a given server adress and port into a readable format for gcoap
-* Utilzes the netutils package to save the new details in the variable remote
+* Parses a given server address and port into a readable format for gcoap
+* Utilize the netutils package to save the new details in the variable remote
 
 ### _resp_handler
 * Handler to take care of any response received from the websocket
 * Necessary to investigate potential issues like timeouts or error codes
+
+
+## Class configuration
+
+This class functions as the central configuration management. The variable app_config uses the struct config_t to store 
+the configuration variables. 
+
+The struct config_t:
+
+<table>
+    <thead>
+        <tr>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: left;">Type</th>
+            <th style="text-align: left;">Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>temperature_notification_interval</td>
+            <td>int</td>
+            <td>Temperature notification interval in minutes.</td>
+        </tr>
+        <tr>
+            <td>enable_led_feedback</td>
+            <td>bool</td>
+            <td>Led Feedback toggle.</td>
+        </tr>
+        <tr>
+            <td>bot_token</td>
+            <td>char</td>
+            <td>Telegram bot token.</td>
+        </tr>
+        <tr>
+            <td>chat_ids</td>
+            <td>chat_entry_t</td>
+            <td>Telegram chat usernames and ids.</td>
+        </tr>
+        <tr>
+            <td>telegram_url</td>
+            <td>char</td>
+            <td>Telegram API URL.</td>
+        </tr>
+        <tr>
+            <td>address</td>
+            <td>char</td>
+            <td>CoAP server IPv6 address.</td>
+        </tr>
+        <tr>
+            <td>port</td>
+            <td>char</td>
+            <td>CoAP server port.</td>
+        </tr>
+        <tr>
+            <td>uri_path</td>
+            <td>char</td>
+            <td>CoAP server URI path.</td>
+        </tr>
+    </tbody>
+</table>
+
+The struct chat_entry_t:
+
+<table>
+    <thead>
+        <tr>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: left;">Type</th>
+            <th style="text-align: left;">Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>first_name</td>
+            <td>char</td>
+            <td>First name of the person associated with a chat.</td>
+        </tr>
+        <tr>
+            <td>chat_id</td>
+            <td>char</td>
+            <td>Chat id of a chat</td>
+        </tr>
+    </tbody>
+</table>
+
+This class further provides setter and getter functions for all of these variables. To allow for modification and 
+management of these variables during runtime.
+
+In the case of chat_ids there is some additional functionality implemented. For each of the following functionalities 
+is implemented in a separate function:
+* You can add or update chat_ids by first_name and by chat_id
+* You can get a single chat_id by first_name
+* You can get a single chat_id by index
+* You can get a list of all chat_ids (comma seperated)
+* You can remove a chat_id from chat_ids by chat_id or first_name
+
+
+## Header config_constants
+
+This header is used for 3 different functionalities regarding important constants of the application.
+* Define constants which limit the size of certain variables used throughout the application. 
+* Set the default values for variables in case they were not assigned at build-time as CFLAGS.
+* Throw an error at build-time if the 2 most important variables are missing
+
+<table>
+    <thead>
+        <tr>
+            <th style="text-align: left;">Type</th>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: left;">Value</th>
+            <th style="text-align: left;">Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td rowspan=9>Constant Lengths</td>
+            <td>BOT_TOKEN_LENGTH</td>
+            <td>50</td>
+            <td>The length of the telegram bot token.</td>
+        </tr>
+        <tr>
+            <td>MAX_CHAT_IDS</td>
+            <td>10</td>
+            <td>The maximum number of telegram chats.</td>
+        </tr>
+        <tr>
+            <td>CHAT_ID_LENGTH</td>
+            <td>12</td>
+            <td>The length of a single telegram chat id.</td>
+        </tr>
+        <tr>
+            <td>CHAT_NAME_LENGTH</td>
+            <td>15</td>
+            <td>The length of the associated first name to the chat id.</td>
+        </tr>
+        <tr>
+            <td>URL_LENGTH</td>
+            <td>30</td>
+            <td>The length of the telegram bot url.</td>
+        </tr>
+        <tr>
+            <td>ADDRESS_LENGTH</td>
+            <td>40</td>
+            <td>The length of the IPv6 address from the CoAP server.</td>
+        </tr>
+        <tr>
+            <td>PORT_LENGTH</td>
+            <td>5</td>
+            <td>The length of the CoAP server port.</td>
+        </tr>
+        <tr>
+            <td>URI_PATH_LENGTH</td>
+            <td>20</td>
+            <td>The length of the CoAP server endpoint.</td>
+        </tr>
+        <tr>
+            <td>MESSAGE_DATA_LENGTH</td>
+            <td>40</td>
+            <td>The maximum size of the actual message payload.</td>
+        </tr>
+        <tr>
+            <td rowspan=6>Default Values</td>
+            <td>TEMPERATURE_NOTIFICATION_INTERVAL</td>
+            <td>5</td>
+            <td>Temperature notification interval (in min) used to send telegram messages to the user.</td>
+        </tr>
+        <tr>
+            <td>ENABLE_LED_FEEDBACK</td>
+            <td>0</td>
+            <td>Toggle to en-/disable LED feedback on CoAP messages.</td>
+        </tr>
+        <tr>
+            <td>TELEGRAM_SERVER_URL</td>
+            <td>"https://api.telegram.org/bot"</td>
+            <td>The telegram bot URL.</td>
+        </tr>
+        <tr>
+            <td>COAP_SERVER_ADDRESS</td>
+            <td>"::1"</td>
+            <td>The IPv6 address of the CoAP server.</td>
+        </tr>
+        <tr>
+            <td>COAP_SERVER_PORT</td>
+            <td>"5683"</td>
+            <td>The port of the CoAP server.</td>
+        </tr>
+        <tr>
+            <td>COAP_SERVER_URI_PATH</td>
+            <td>"/message"</td>
+            <td>The endpoint of the CoAP server.</td>
+        </tr>
+        <tr>
+            <td rowspan=2>Important Variables</td>
+            <td>TELEGRAM_BOT_TOKEN</td>
+            <td>-</td>
+            <td>The telegram bot token.</td>
+        </tr>
+        <tr>
+            <td>TELEGRAM_CHAT_IDS</td>
+            <td>-</td>
+            <td>The telegram username and chat_id combination.</td>
+        </tr>
+    </tbody>
+</table>

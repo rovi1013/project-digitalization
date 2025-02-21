@@ -1,12 +1,24 @@
+# IDEs
 .vscode
 .idea
 .temp
-*venv
-*__pycache__
-*.draft
-*.env*
+
+# C
 *bin
 /cmake-build-debug/
-.old
+
+# Python
+*venv
+*__pycache__
+
+# Files
 *.log
 *.ini
+*.env*
+
+# Test coap server
+send_coap_req.py
+
+# Misc
+*.old
+*.draft

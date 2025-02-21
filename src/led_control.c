@@ -59,8 +59,3 @@ int led_control_execute(uint8_t led_id, const char *action) {
     const uint8_t value = atoi(action);
     return led_saul_write(led_id, value);
 }
-
-// Initialize LEDs
-void led_control_init(void) {
-    puts("LED control initialized using SAUL");
-}

@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/home/riot/project-digitalization/websocket
-Environment="COAP_SERVER_IP=2001:470:7347:c822::1234"
+Environment="COAP_SERVER_IP=2001:470:7347:c810::1234"
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=/bin/bash -c '/home/riot/project-digitalization/websocket/.venv/bin/python /home/riot/project-digitalization/websocket/coap_websocket.py'
 Restart=always

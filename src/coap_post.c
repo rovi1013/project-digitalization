@@ -10,46 +10,92 @@
 #include "net/sock/udp.h"
 #include "net/coap.h"
 #include "coap_post.h"
+
+#include <ctype.h>
+
+#include "configuration.h"
 #include "utils/error_handler.h"
 
-static coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
-volatile bool coap_response_status = false;
+#define CONFIG_PASSWORD "password123"
 
-/**
- * Initialize the CoAP request
- */
-void init_coap_request(coap_request_t *request) {
-    if (!request) { // Null pointer
-        handle_error(__func__,ERROR_NULL_POINTER);
-        return;
-    }
-    // Set the values from the C macros
-    struct {
-        char *dest;
-        const char *src;
-        size_t size;
-    } field_map[] = {
-        {request->url, COAP_SERVER_URL, URL_LENGTH},
-        {request->address, COAP_SERVER_ADDRESS, ADDRESS_LENGTH},
-        {request->port, COAP_SERVER_PORT, PORT_LENGTH},
-        {request->uri_path, COAP_SERVER_URI_PATH, URI_PATH_LENGTH},
-        {request->telegram_bot_token, TELEGRAM_BOT_TOKEN, BOT_TOKEN_LENGTH},
-        {request->chat_ids, TELEGRAM_CHAT_IDS, MAX_CHAT_IDS * CHAT_ID_LENGTH}
-    };
-    for (size_t i = 0; i < sizeof(field_map) / sizeof(field_map[0]); i++) {
-        snprintf(field_map[i].dest, field_map[i].size, "%s", field_map[i].src);
+coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
+static bool coap_response_status = false;
+char response[300];
+
+// Set CoAP response handler status
+void set_coap_response_status(const bool is_done) {
+    coap_response_status = is_done;
+}
+
+// Get CoAP response handler status
+bool get_coap_response_status(void) {
+    return coap_response_status;
+}
+
+void process_config_command(const char *token) {
+    // Changing LED-Feedback to either 0 or 1
+    if (token[0] == 'f' && (token[1] == '0' || token[1] == '1')) {
+        printf("Feedback received: %s\n", token);
+        config_set_led_feedback(atoi(token+1));
+
+    // Changing the Interval timer to a value between 1 or 120
+    } else if (token[0] == 'i' && isdigit((int)token[1])) {
+        printf("Interval received: %s\n", token);
+        printf("test: %d\n", (int)token+1);
+        config_set_notification_interval(atoi(token+1));
+
+    // Removing a User from receiving notifications
+    } else if (token[0] == 'r' && isdigit((int)token[1])) {
+        printf("Remove received: %s\n", token);
+        config_remove_chat_by_id_or_name(token+1);
+
+    // Adding a User to receiving notifications
+    } else {
+        printf("Addition received: %s\n", token);
+        char *colon = strchr(token, ':');
+        printf("%s\n", colon);
+        if (colon) {
+            *colon = '\0';
+            printf("Token: %s\n", token);
+            printf("Colon: %s\n", colon+1);
+            config_set_chat_id(token, colon+1);
+        }
     }
 }
 
-/**
- * Response handler for CoAP requests
- */
+
+void config_control(coap_pkt_t *pkt) {
+    memset(response, 0, sizeof(response));
+
+    if (pkt->payload_len < 300) {
+        memcpy(response, pkt->payload, pkt->payload_len);
+        response[pkt->payload_len] = '\0';
+    } else {
+        printf("Payload too large, skipping processing.\n");
+        return;
+    }
+
+    if (strcmp(response, "Messages sent successfully") == 0 || strcmp(response, "No Updates") == 0) {
+        printf("Received status message: %s\n", response);
+        return;
+    }
+
+    printf("Received status message: %s\n", response);
+
+    char *token = strtok(response, ";");
+    while (token != NULL) {
+        process_config_command(token);
+        token = strtok(NULL, ";");
+    }
+}
+
+// Response handler for CoAP requests
 static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *pkt, const sock_udp_ep_t *remote) {
     (void)remote;
-    coap_response_status = false;
+    set_coap_response_status(false);
 
     // Get the context
-    coap_request_context_t *req_ctx = (coap_request_context_t *)memo->context;
+    coap_request_context_t *req_ctx = memo->context;
     if (!req_ctx) {
         handle_error(__func__, ERROR_NULL_POINTER);
         return;
@@ -61,17 +107,25 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         return;
     }
 
-    unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
+    const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
+    /* Handle Acknowledgements */
     if (msg_type == COAP_TYPE_ACK) {
         if (pkt->hdr->code == COAP_CODE_EMPTY) {
             return;
         }
-        coap_response_status = true;
+        set_coap_response_status(true);
         return;
     }
 
-    // Blockwise response handling
+    /* Handle Payload */
+    if (pkt->payload_len > 0) {
+        config_control(pkt);
+        set_coap_response_status(true);
+        return;
+    }
+
+    // Block wise response handling
     coap_block1_t block;
     if (coap_get_block2(pkt, &block)) {
         if (block.more) {
@@ -105,13 +159,14 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         }
     }
 
-    coap_response_status = true;
+    set_coap_response_status(true);
 }
 
-/**
- * Initialize and prepare the CoAP packet.
- */
+// Initialize and prepare the CoAP packet.
 static int coap_prepare_packet(coap_pkt_t *pkt, const char *uri_path, const char *payload) {
+    // Clear buffer before reuse
+    memset(coap_buffer, 0, sizeof(coap_buffer));
+
     // Initialize CoAP request
     const int result = gcoap_req_init(
         pkt,
@@ -145,22 +200,20 @@ static int coap_prepare_packet(coap_pkt_t *pkt, const char *uri_path, const char
     return COAP_PKT_SUCCESS;
 }
 
-/**
- * Send the CoAP request to the server.
- */
-static int coap_send_request(const coap_pkt_t *pkt, const coap_request_t *request) {
+// Send the CoAP request to the server.
+static int coap_send_request(const coap_pkt_t *pkt) {
     // Prepare CoAP destination
     sock_udp_ep_t remote = { .family = AF_INET6 };
-    if (ipv6_addr_from_str((ipv6_addr_t *)&remote.addr, request->address) == NULL) {
+    if (ipv6_addr_from_str((ipv6_addr_t *)&remote.addr, config_get_address()) == NULL) {
         return ERROR_IPV6_FORMAT;
     }
     remote.netif = SOCK_ADDR_ANY_NETIF;
-    remote.port = atoi(request->port);
+    remote.port = atoi(config_get_port());
 
     // Send the CoAP request
     coap_request_context_t req_ctx;
     req_ctx.message_id = pkt->hdr->id;
-    req_ctx.uri_path = request->uri_path;
+    req_ctx.uri_path = config_get_uri_path();
 
     ssize_t coap_response = gcoap_req_send(
         (uint8_t *) coap_buffer,
@@ -180,14 +233,11 @@ static int coap_send_request(const coap_pkt_t *pkt, const coap_request_t *reques
     return COAP_SUCCESS;
 }
 
-/**
- * Create a CoAP POST request with a given message.
- * Sends the message.
- */
-int coap_post_send(coap_request_t *request, const char *message) {
-    coap_response_status = false;
+// Create a CoAP POST request with a given message and specific chat_id.
+int coap_post_send(const char *message, const char *recipient) {
+    set_coap_response_status(false);
 
-    if (!request || !message) {
+    if (!message) {
         handle_error(__func__,ERROR_INVALID_ARGUMENT);
         return ERROR_INVALID_ARGUMENT;
     }
@@ -196,11 +246,48 @@ int coap_post_send(coap_request_t *request, const char *message) {
     char payload[COAP_BUF_SIZE];
 
     // Step 1: Build URI Path
-    snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", request->uri_path);
+    snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", config_get_uri_path());
+
+    // Step 2: Determine the chat ID(s)
+    const char *chat_ids;
+    if (strcmp(recipient, "all") != 0) {
+        chat_ids = config_get_chat_id_by_name(recipient);
+        if (!chat_ids) {
+            handle_error(__func__, ERROR_CHAT_ID_NOT_FOUND);
+            return ERROR_CHAT_ID_NOT_FOUND;
+        }
+    } else {
+        chat_ids = config_get_chat_ids_string();  // Default: Send to all
+    }
+
+    // Step 3: Build Payload
+    snprintf(payload, sizeof(payload), "url=%s&token=%s&chat_ids=%s&text=%s",
+             config_get_telegram_url(), config_get_bot_token(), chat_ids, message);
+
+    // Step 4: Prepare CoAP Packet
+    coap_pkt_t pkt;
+    if (coap_prepare_packet(&pkt, uri_path, payload) != COAP_PKT_SUCCESS) {
+        return ERROR_COAP_INIT;
+    }
+    handle_error(__func__, COAP_PKT_SUCCESS);
+
+    // Step 5: Send Request
+    return coap_send_request(&pkt);
+}
+
+
+/* Sending a post request to websocket to make a get-request to fetch updates */
+int coap_post_get_updates(void) {
+    set_coap_response_status(false);
+
+    char uri_path[URI_PATH_LENGTH + 1];
+    char payload[COAP_BUF_SIZE];
+
+    // Step 1: Build URI Path
+    snprintf(uri_path, URI_PATH_LENGTH + 1, "%s", "/update");
 
     // Step 2: Build Payload
-    snprintf(payload, sizeof(payload), "url=%s&token=%s&chat_ids=%s&text=%s",
-             request->url, request->telegram_bot_token, request->chat_ids, message);
+    snprintf(payload, sizeof(payload), "url=%s&token=%s", config_get_telegram_url(), config_get_bot_token());
 
     // Step 3: Prepare CoAP Packet
     coap_pkt_t pkt;
@@ -210,5 +297,5 @@ int coap_post_send(coap_request_t *request, const char *message) {
     handle_error(__func__, COAP_PKT_SUCCESS);
 
     // Step 4: Send Request
-    return coap_send_request(&pkt, request);
+    return coap_send_request(&pkt);
 }

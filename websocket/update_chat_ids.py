@@ -24,17 +24,18 @@ def fetch_chat_ids(bot_token):
 
     if response.status_code != 200:
         print(f"❌ Error fetching updates: {response.text}")
-        return []
+        return {}
 
     updates = response.json().get("result", [])
-    chat_ids = set()
+    chat_id_map = {}
 
     for update in updates:
         if "message" in update:
             chat_id = str(update["message"]["chat"]["id"])
-            chat_ids.add(chat_id)
+            first_name = update["message"]["chat"].get("first_name", f"User{chat_id}")  # Default to "User<ID>"
+            chat_id_map[chat_id] = first_name  # Store chat ID with name
 
-    return list(chat_ids)
+    return chat_id_map
 
 # Function to read existing chat IDs from config.ini
 def load_existing_chat_ids():
@@ -42,22 +43,38 @@ def load_existing_chat_ids():
     config.read(CONFIG_FILE)
 
     if "telegram" in config and "chat_ids" in config["telegram"]:
-        return set(config["telegram"]["chat_ids"].split(","))
+        chat_id_entries = config["telegram"]["chat_ids"].split(",")
+        chat_id_map = {}
 
-    return set()
+        for entry in chat_id_entries:
+            if ":" in entry:
+                name, chat_id = entry.split(":", 1)
+                chat_id_map[chat_id] = name  # Store name with chat ID
+
+        return chat_id_map
+
+    return {}
 
 # Function to update config.ini
 def update_chat_ids():
     bot_token = load_telegram_bot_token()
-    new_chat_ids = fetch_chat_ids(bot_token)
+    new_chat_id_map = fetch_chat_ids(bot_token)
 
-    if not new_chat_ids:
+    if not new_chat_id_map:
         print("ℹ️  No new chat IDs found.")
         return
 
-    existing_chat_ids = load_existing_chat_ids()
-    updated_chat_ids = existing_chat_ids.union(new_chat_ids)
+    existing_chat_id_map = load_existing_chat_ids()
 
+    # Merge existing names with new IDs
+    for chat_id, name in new_chat_id_map.items():
+        if chat_id not in existing_chat_id_map:
+            existing_chat_id_map[chat_id] = name  # Add new entry
+
+    # Format chat IDs as "Name:ID"
+    formatted_chat_ids = [f"{name}:{chat_id}" for chat_id, name in existing_chat_id_map.items()]
+
+    # Update config.ini
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
 
@@ -65,9 +82,9 @@ def update_chat_ids():
         config["telegram"] = {}
 
     config["telegram"]["bot_token"] = bot_token
-    config["telegram"]["chat_ids"] = ",".join(sorted(updated_chat_ids))
+    config["telegram"]["chat_ids"] = ",".join(sorted(formatted_chat_ids))  # Sort for consistency
 
-    with open(CONFIG_FILE, "w") as configfile:
+    with open(CONFIG_FILE, "w", encoding="utf-8") as configfile:
         config.write(configfile)
 
     print("✅ Updated chat IDs in config.ini")

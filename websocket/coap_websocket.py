@@ -205,8 +205,8 @@ class CoAPResourceGet(resource.Resource):
         if "feedback" in updates:
             encoded_list.append(f"f{updates['feedback']}")  # Use "f" for feedback
 
-        if self.chats:  # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
-            chat_string = ";".join([f"{first_name}:{chat_id}" for chat_id, first_name in self.chats.items()])
+        if added_chats:  # Encode chats in the format "first_name1:chat_id_1;first_name_2:chat_id_2;..."
+            chat_string = ";".join([f"{first_name}:{chat_id}" for chat_id, first_name in added_chats.items()])
             encoded_list.append(chat_string)
 
         if removal_chat_id:

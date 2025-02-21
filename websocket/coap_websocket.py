@@ -186,6 +186,7 @@ class CoAPResourceGet(resource.Resource):
                         if chat_id:
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Update(s) applied.")
 
+                        self.last_update = time.time()
                         return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
                     # If absolutely nothing changed, return "No Updates"

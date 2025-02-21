@@ -133,6 +133,7 @@ class CoAPResourceGet(resource.Resource):
                         if chat_id in self.chats:
                             removal_chat_id = chat_id
                             del self.chats[chat_id]
+                            del added_chats[chat_id]
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
                         else:
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")

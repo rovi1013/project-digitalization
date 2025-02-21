@@ -195,14 +195,30 @@ class CoAPResourceGet(resource.Resource):
 
                     # If there are updates, send via CoAP
                     if updated_values or removal_chat_id is not None or (added_chats and len(added_chats) > 0):
-                        self._fancy_logging(updated_values, removal_chat_id, added_chats) # Fancy logging
+                        last_sent_update = self.processed_updates.get("last_sent_update", None)
+                        new_update_data = {"interval": updated_values.get("interval"),
+                                           "feedback": updated_values.get("feedback"),
+                                           "removal": removal_chat_id,
+                                           "added_chats": added_chats}
+
+                        # Compare with last sent update, only send if there's a new update
+                        if last_sent_update == new_update_data:
+                            logging.info("No new updates since last request, skipping CoAP message.")
+                            return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
+
+                        # Store this as the last sent update
+                        self.processed_updates["last_sent_update"] = new_update_data
+
+                        # Log changes and encode message
+                        self._fancy_logging(updated_values, removal_chat_id, added_chats)
                         compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 
-                        if last_sender_chat_id: # Notify the user that send the update
+                        if last_sender_chat_id:
                             await self._notify_user(telegram_api_url, telegram_bot_token, last_sender_chat_id, "Update(s) applied.")
 
                         return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
+                    # If nothing changed at all
                     logging.info("No changes detected, nothing sent via CoAP.")
                     return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
 

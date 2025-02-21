@@ -124,6 +124,18 @@ class CoAPResourceGet(resource.Resource):
                     if not text:
                         continue
 
+                    if timestamp and int(timestamp) > self.last_update:
+                        # Handle "remove me"
+                        print(f"test {timestamp}")
+                        if text.lower() == "remove me":
+                            if chat_id in self.chats:
+                                removal_chat_id = chat_id
+                                del self.chats[chat_id]
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
+                            else:
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
+                            continue
+
                     # Handle new user registration
                     if chat_id and first_name and chat_id not in self.chats:
                         added_chats[chat_id] = first_name
@@ -145,16 +157,6 @@ class CoAPResourceGet(resource.Resource):
                         continue
 
                     if timestamp and int(timestamp) > self.last_update:
-                        # Handle "remove me"
-                        print(f"test {timestamp}")
-                        if text.lower() == "remove me":
-                            if chat_id in self.chats:
-                                removal_chat_id = chat_id
-                                del self.chats[chat_id]
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
-                            else:
-                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
-                            continue
                         # Validate input values before updating
                         if name == "interval":
                             try:

@@ -62,7 +62,7 @@ void process_config_command(const char *token) {
     }
 }
 
-// Handle POST response from user updates
+// Handle CoAP POST responses
 void config_control(const coap_pkt_t *pkt) {
     memset(response, 0, sizeof(response));
 
@@ -74,12 +74,13 @@ void config_control(const coap_pkt_t *pkt) {
         return;
     }
 
+    // Message sent successfully: Notification update successful; No Updates: No configuration updates found
     if (strcmp(response, "Messages sent successfully") == 0 || strcmp(response, "No Updates") == 0) {
         printf("Received status message: %s\n", response);
         return;
     }
 
-    // Semicolons divide POST-response
+    // Semicolons divide configuration changes in POST-response
     char *token = strtok(response, ";");
     while (token != NULL) {
         process_config_command(token);
@@ -272,7 +273,6 @@ int coap_post_send(const char *message, const char *recipient) {
     // Step 5: Send Request
     return coap_send_request(&pkt);
 }
-
 
 // Sending a POST request to websocket to make a get-request to fetch updates
 int coap_post_get_updates(void) {

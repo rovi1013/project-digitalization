@@ -129,8 +129,9 @@ class CoAPResourceGet(resource.Resource):
 
                     logging.info(f"Retrieved JSON from Telegram")
                     logging.info(f"Filtered messages: {new_messages}")
-                    #return aiocoap.Message(code=Code.CONTENT, payload=b"[\"config password123 interval 5\"]")
-                    return aiocoap.Message(code=Code.CONTENT, payload=str(new_messages).encode("utf-8"))
+                    return aiocoap.Message(code=Code.CONTENT, payload=b""+new_messages.encode("utf-8"))
+                    #return aiocoap.Message(code=Code.CONTENT, payload=str(new_messages).encode("utf-8"))
+                    #test
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")
                     return aiocoap.Message(code=Code.INTERNAL_SERVER_ERROR, payload=b"Failed to fetch updates")

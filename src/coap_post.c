@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "net/gcoap.h"
 #include "net/sock/udp.h"
 #include "net/coap.h"
 #include "coap_post.h"
 
-#include <ctype.h>
 
 #include "configuration.h"
 #include "utils/error_handler.h"

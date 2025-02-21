@@ -105,10 +105,6 @@ class CoAPResourceGet(resource.Resource):
 
                 if response.status_code == 200:
                     data = response.json()
-                    updated_values = {}
-                    removal_chat_id = None
-                    last_sender_chat_id = None
-                    new_chats = {}
 
                     if self.last_update is None:
                         self.last_update = time.time()
@@ -118,7 +114,6 @@ class CoAPResourceGet(resource.Resource):
                     added_chats = {}
 
                     for update in data.get("result", []):
-                        update_id = update.get("update_id")
                         message = update.get("message", {})
                         text = message.get("text", "").strip()
                         chat_id = message.get("chat", {}).get("id", "")
@@ -156,7 +151,7 @@ class CoAPResourceGet(resource.Resource):
                         # Validate the password (only required for "config" updates)
                         if password != self.password:
                             logging.warning(f"Invalid password received: {password}")
-                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
+                            #await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
                             continue
 
                         # Validate input values before updating

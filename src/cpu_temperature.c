@@ -35,6 +35,8 @@ int cpu_temperature_get(cpu_temperature_t *cpu_temp) {
     phydat_t data;
     saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
 
+    saul_reg_t *device = saul_reg_find_type(SAUL_SENSE_TEMP);
+
     // Check device correctness
     if (device == NULL) {
         cpu_temp->status = ERROR_NO_SENSOR;

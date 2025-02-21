@@ -103,7 +103,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     // Handle timeouts
     if (memo->state == GCOAP_MEMO_TIMEOUT) {
-        handle_error(__func__, ERROR_COAP_TIMEOUT);
+        //handle_error(__func__, ERROR_COAP_TIMEOUT);
         return;
     }
 

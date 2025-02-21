@@ -194,7 +194,7 @@ class CoAPResourceGet(resource.Resource):
                     self._cleanup_old_updates()
 
                     # If there are updates, send via CoAP
-                    if updated_values or removal_chat_id or added_chats:
+                    if updated_values or removal_chat_id is not None or (added_chats and len(added_chats) > 0):
                         self._fancy_logging(updated_values, removal_chat_id, added_chats) # Fancy logging
                         compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 

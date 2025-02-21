@@ -194,14 +194,6 @@ class CoAPResourceGet(resource.Resource):
                     # Cleanup old updates
                     self._cleanup_old_updates()
 
-                    # If there are updates, send via CoAP
-                    if updated_values or removal_chat_id is not None or (added_chats and len(added_chats) > 0):
-                        last_sent_update = self.processed_updates.get("last_sent_update", None)
-                        new_update_data = {"interval": updated_values.get("interval"),
-                                           "feedback": updated_values.get("feedback"),
-                                           "removal": removal_chat_id,
-                                           "added_chats": added_chats}
-
                     # Ensure last_sent_update exists
                     if not hasattr(self, "last_sent_update"):
                         self.last_sent_update = None  # Initialize if it doesn't exist

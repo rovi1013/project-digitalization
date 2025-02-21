@@ -20,7 +20,6 @@
 
 coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
 static bool coap_response_status = false;
-char buffer[50];
 char response[300];
 
 // Set CoAP response handler status
@@ -37,30 +36,30 @@ void process_config_command(const char *token) {
     // Changing LED-Feedback to either 0 or 1
     if (token[0] == 'f' && (token[1] == '0' || token[1] == '1')) {
         printf("Feedback received: %s\n", token);
-        //config_set_led_feedback(token+1);
+        config_set_led_feedback(atoi(token+1));
 
     // Changing the Interval timer to a value between 1 or 120
     } else if (token[0] == 'i' && isdigit((int)token[1])) {
         printf("Interval received: %s\n", token);
-        //config_set_notification_interval(token+1);
+        printf("test: %d\n", (int)token+1);
+        config_set_notification_interval(atoi(token+1));
 
     // Removing a User from receiving notifications
     } else if (token[0] == 'r' && isdigit((int)token[1])) {
         printf("Remove received: %s\n", token);
-        //config_remove_chat_by_id_or_name(token+1);
+        config_remove_chat_by_id_or_name(token+1);
 
     // Adding a User to receiving notifications
     } else {
         printf("Addition received: %s\n", token);
         char *colon = strchr(token, ':');
-        if (colon && (colon - token) <= 15 && isdigit((int)colon+1)) {
+        printf("%s\n", colon);
+        if (colon) {
             *colon = '\0';
             printf("Token: %s\n", token);
             printf("Colon: %s\n", colon+1);
-            //config_set_chat_id(token, colon);
+            config_set_chat_id(token, colon+1);
         }
-
-
     }
 }
 
@@ -70,7 +69,7 @@ void config_control(coap_pkt_t *pkt) {
 
     if (pkt->payload_len < 300) {
         memcpy(response, pkt->payload, pkt->payload_len);
-        response[pkt->payload_len] = '\0'; // Sicherstellen, dass es nullterminiert ist
+        response[pkt->payload_len] = '\0';
     } else {
         printf("Payload too large, skipping processing.\n");
         return;
@@ -80,6 +79,8 @@ void config_control(coap_pkt_t *pkt) {
         printf("Received status message: %s\n", response);
         return;
     }
+
+    printf("Received status message: %s\n", response);
 
     char *token = strtok(response, ";");
     while (token != NULL) {
@@ -124,7 +125,7 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
         return;
     }
 
-    // Blockwise response handling
+    // Block wise response handling
     coap_block1_t block;
     if (coap_get_block2(pkt, &block)) {
         if (block.more) {

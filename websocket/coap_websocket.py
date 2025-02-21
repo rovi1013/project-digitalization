@@ -6,7 +6,7 @@ import aiocoap
 import httpx
 from aiocoap import resource, Code
 import re
-import time
+from datetime import datetime
 
 # Only allow for WARNING logging from automatic loggers
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -27,7 +27,7 @@ logging.basicConfig(
 # Get IPv6 address from systemd environment
 coap_server_ip = os.getenv("COAP_SERVER_IP", "::1")  # Default to localhost (::1) if unset
 logging.info(f"Using CoAP server IP: {coap_server_ip}")
-start_time = time.time()
+start_time = datetime.now()
 
 
 class CoAPResource(resource.Resource):
@@ -174,11 +174,11 @@ class CoAPResourceGet(resource.Resource):
                         updated_values["feedback"] = value
 
                 # Step 5: If a change occurred, update last_update and send an update
-                if timestamp < self.last_update:
+                if timestamp < self.last_update.timestamp():
                     self._fancy_logging(updated_values, removal_chat_id, added_chats)
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)
 
-                    self.last_update = time.time()  # Update the timestamp as soon as a change occurs
+                    self.last_update = datetime.now()  # Update the timestamp as soon as a change occurs
                     return aiocoap.Message(code=Code.CONTENT, payload=compact_message)
 
                 # Step 6: If nothing changed, return "No Updates"

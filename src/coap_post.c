@@ -11,6 +11,8 @@
 #include "net/coap.h"
 #include "coap_post.h"
 
+#include <ctype.h>
+
 #include "configuration.h"
 #include "utils/error_handler.h"
 
@@ -18,6 +20,8 @@
 
 coap_hdr_t coap_buffer[COAP_BUF_SIZE];  // Shared buffer for CoAP request
 static bool coap_response_status = false;
+char buffer[50];
+char response[300];
 
 // Set CoAP response handler status
 void set_coap_response_status(const bool is_done) {
@@ -29,118 +33,57 @@ bool get_coap_response_status(void) {
     return coap_response_status;
 }
 
-void process_config_command(const char *message) {
-    char buffer[COAP_BUF_SIZE];
-    snprintf(buffer, sizeof(buffer), "%s", message);
-    buffer[COAP_BUF_SIZE - 1] = '\0';
+void process_config_command(const char *token) {
+    // Changing LED-Feedback to either 0 or 1
+    if (token[0] == 'f' && (token[1] == '0' || token[1] == '1')) {
+        printf("Feedback received: %s\n", token);
+        config_set_led_feedback(token+1);
 
-    if (strlen(message) >= COAP_BUF_SIZE) {
-        printf("Warning: message too long\n");
-        return;
-    }
+    // Changing the Interval timer to a value between 1 or 120
+    } else if (token[0] == 'i' && isdigit(token[1])) {
+        printf("Interval received: %s\n", token);
+        config_set_notification_interval(token+1);
 
-    char *token = strtok(buffer, " ");
-    if (!token || strcmp(token, "config") != 0) {
-        printf("Ungültiges Format.\n");
-        return;
-    }
+    // Removing a User from receiving notifications
+    } else if (token[0] == 'r' && isdigit(token[1])) {
+        printf("Remove received: %s\n", token);
+        config_remove_chat_by_id_or_name(token+1);
 
-    // Check
-    char *password = strtok(NULL, " ");
-    if (!password || strcmp(password, CONFIG_PASSWORD) != 0) {
-        printf("Falsches Passwort.\n");
-        return;
-    }
-
-    // Variable lesen
-    char *variable = strtok(NULL, " ");
-    if (!variable) {
-        printf("Fehlende Variable.\n");
-        return;
-    }
-
-    // Werte auslesen
-    char *value1 = strtok(NULL, " ");
-    char *value2 = strtok(NULL, " ");
-
-    if (strcmp(variable, "set-chat") == 0) {
-        if (!value1 || !value2) {
-            printf("Fehlende Werte für set-chat.\n");
-            return;
+    // Adding a User to receiving notifications
+    } else {
+        printf("Addition received: %s\n", token);
+        char *colon = strchr(token, ":");
+        if (colon && (colon - token) <= 15 && isdigit(*(colon+1))) {
+            *colon = '\0';
+            config_set_chat_id(token, colon);
         }
-        printf("Setze Chat %s mit ID %s\n", value1, value2);
-    }
-    else {
-        if (!value1) {
-            printf("Fehlender Wert für %s.\n", variable);
-            return;
-        }
-        if (strcmp(variable, "interval") == 0) {
-            int minutes = atoi(value1);
-            printf("Setze Intervall auf %d Minuten\n", minutes);
 
-        }
-        else if (strcmp(variable, "feedback") == 0) {
-            int feedback = atoi(value1);
-            printf("Setze Feedback auf %d\n", feedback);
 
-        }
-        else if (strcmp(variable, "bot-token") == 0) {
-            printf("Setze Bot-Token: %s\n", value1);
-
-        }
-        else if (strcmp(variable, "remove-chat") == 0) {
-            printf("Entferne Chat: %s\n", value1);
-
-        }
-        else if (strcmp(variable, "telegram-url") == 0) {
-            printf("Setze Telegram-URL: %s\n", value1);
-
-        }
-        else if (strcmp(variable, "address") == 0) {
-            printf("Setze IPv6-Adresse: %s\n", value1);
-
-        }
-        else if (strcmp(variable, "port") == 0) {
-            int port = atoi(value1);
-            printf("Setze Port auf %d\n", port);
-
-        }
-        else if (strcmp(variable, "uri-path") == 0) {
-            printf("Setze URI-Pfad: %s\n", value1);
-
-        }
-        else {
-            printf("Ungültige Konfigurationsanweisung.\n");
-        }
     }
 }
 
+
 void config_control(coap_pkt_t *pkt) {
-    if (pkt->payload_len > 0) {
-        char response[COAP_BUF_SIZE];
+    memset(response, 0, sizeof(response));
 
-        /*
-        snprintf(response, pkt->payload_len, "%s", pkt->payload);
-        response[pkt->payload_len] = '\0';
-        */
-
+    if (pkt->payload_len < 300) {
         memcpy(response, pkt->payload, pkt->payload_len);
-
-
-        printf("Received REsponse: %s\n", response);
-
-        if (strncmp(response, "[", 1) == 0) {
-            char *msg = strtok(response, "[],");
-            while (msg) {
-                //printf("%s\n", msg);
-                puts("mist");
-                process_config_command(msg);
-                msg = strtok(NULL, "[],");
-            }
-        }
+        response[pkt->payload_len] = '\0'; // Sicherstellen, dass es nullterminiert ist
+    } else {
+        printf("Payload too large, skipping processing.\n");
+        return;
     }
 
+    if (strcmp(response, "Messages sent successfully") == 0 || strcmp(response, "noUpdate") == 0) {
+        printf("Received status message: %s\n", response);
+        return;
+    }
+
+    char *token = strtok(response, ";");
+    while (token != NULL) {
+        process_config_command(token);
+        token = strtok(NULL, ";");
+    }
 }
 
 // Response handler for CoAP requests
@@ -163,20 +106,20 @@ static void coap_response_handler(const gcoap_request_memo_t *memo, coap_pkt_t *
 
     const unsigned msg_type = (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 
+    if (msg_type == COAP_TYPE_ACK) {
+        if (pkt->hdr->code == COAP_CODE_EMPTY) {
+            return;
+        }
+        set_coap_response_status(true);
+        return;
+    }
+
     /* Print Payload */
     if (pkt->payload_len > 0) {
         //printf("Received Response: %.*s\n", pkt->payload_len, (char *)pkt->payload);
 
         config_control(pkt);
 
-        set_coap_response_status(true);
-        return;
-    }
-
-    if (msg_type == COAP_TYPE_ACK) {
-        if (pkt->hdr->code == COAP_CODE_EMPTY) {
-            return;
-        }
         set_coap_response_status(true);
         return;
     }
@@ -330,6 +273,7 @@ int coap_post_send(const char *message, const char *recipient) {
     // Step 5: Send Request
     return coap_send_request(&pkt);
 }
+
 
 /* Sending a post request to websocket to make a get-request to fetch updates */
 int coap_post_get_updates(void) {

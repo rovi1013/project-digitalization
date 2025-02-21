@@ -51,6 +51,6 @@ bool get_coap_response_status(void);
 
 int coap_post_get_updates(void);
 
-void config_control(coap_pkt_t *pkt);
+//void config_control(coap_pkt_t *pkt);
 
 #endif //COAP_POST_H

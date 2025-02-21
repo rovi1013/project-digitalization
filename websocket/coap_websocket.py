@@ -80,7 +80,7 @@ class CoAPResourceGet(resource.Resource):
         super().__init__()
         self.processed_updates = {}                                 # Store already processed update IDs
         self.chats = {}                                             # Store chats as a list [{first_name_1, chat_id_1},{first_name_2, chat_id_3},...] <- max 10
-        self.latest_values = {"interval": None, "feedback": None}   # Store latest values
+        self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
         self.password = "password12"                                # "Secret"
         self.update_storage_threshold = 50                          # The maximum number of updates stored on server
 
@@ -151,15 +151,32 @@ class CoAPResourceGet(resource.Resource):
                         # Validate the password
                         if password != self.password:
                             logging.warning(f"Invalid password received: {password}")
+                            await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid password.")
                             continue  # Skip processing if password is incorrect
 
-                        # Only process known functionalities ("interval" and "feedback")
-                        if functionality in self.latest_values:
-                            # If the value is different, update and mark for sending
-                            if self.latest_values[functionality] != value:
-                                self.latest_values[functionality] = value
-                                updated_values[functionality] = value
-                                last_sender_chat_id = chat_id
+                        # Validate input values before updating
+                        if functionality == "interval":
+                            try:
+                                interval_value = int(value)
+                                if not (1 <= interval_value <= 120):
+                                    raise ValueError  # If out of range, trigger error handling
+                                self.latest_values["interval"] = interval_value
+                                updated_values["interval"] = interval_value
+                            except ValueError:
+                                logging.error(f"Invalid interval configuration {interval_value} from chat {chat_id}.")
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid interval. Must be between 1 and 120.")
+                                continue
+
+                        elif functionality == "feedback":
+                            if value not in ["0", "1"]:
+                                logging.error(f"Invalid feedback configuration {value} from chat {chat_id}.")
+                                await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "Invalid feedback. Must be 0 or 1.")
+                                continue
+                            self.latest_values["feedback"] = value
+                            updated_values["feedback"] = value
+
+                        # Track last sender if an update is valid
+                        last_sender_chat_id = chat_id
 
                     # Check if we can add new users (without exceeding 10)
                     if new_chats and len(self.chats) < 10:

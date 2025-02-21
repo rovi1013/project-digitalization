@@ -133,7 +133,6 @@ class CoAPResourceGet(resource.Resource):
                         if chat_id in self.chats:
                             removal_chat_id = chat_id
                             del self.chats[chat_id]
-                            del added_chats[chat_id]
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You have been removed.")
                         else:
                             await self._notify_user(telegram_api_url, telegram_bot_token, chat_id, "You are not in the list.")
@@ -180,6 +179,7 @@ class CoAPResourceGet(resource.Resource):
                     print(f"Telegram timestamp: {timestamp}, self.timestamp: {self.last_update}")
                     self._fancy_logging(self.latest_values, removal_chat_id, added_chats)
                     self.latest_values.update(updated_values)  # Update latest stored values
+                    del added_chats[removal_chat_id[chat_id]]
                     self.chats.update(added_chats) # Update chat IDs
                     self.last_update = int(time.time())  # Update the timestamp as soon as a change occurs
                     compact_message = self._encode_message(updated_values, removal_chat_id, added_chats)

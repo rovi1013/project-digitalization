@@ -83,6 +83,7 @@ class CoAPResourceGet(resource.Resource):
         self.latest_values = {"interval": 2, "feedback": 0}         # Store latest values
         self.password = "password12"                                # "Secret"
         self.update_storage_threshold = 50                          # The maximum number of updates stored on server
+        self.last_sent_update = None
 
     async def render_post(self, request):
         try:
@@ -201,13 +202,25 @@ class CoAPResourceGet(resource.Resource):
                                            "removal": removal_chat_id,
                                            "added_chats": added_chats}
 
+                    # Ensure last_sent_update exists
+                    if not hasattr(self, "last_sent_update"):
+                        self.last_sent_update = None  # Initialize if it doesn't exist
+
+                    if updated_values or removal_chat_id is not None or (added_chats and len(added_chats) > 0):
+                        new_update_data = {
+                            "interval": updated_values.get("interval"),
+                            "feedback": updated_values.get("feedback"),
+                            "removal": removal_chat_id,
+                            "added_chats": added_chats
+                        }
+
                         # Compare with last sent update, only send if there's a new update
-                        if last_sent_update == new_update_data:
+                        if self.last_sent_update == new_update_data:
                             logging.info("No new updates since last request, skipping CoAP message.")
                             return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
 
                         # Store this as the last sent update
-                        self.processed_updates["last_sent_update"] = new_update_data
+                        self.last_sent_update = new_update_data
 
                         # Log changes and encode message
                         self._fancy_logging(updated_values, removal_chat_id, added_chats)
@@ -221,6 +234,7 @@ class CoAPResourceGet(resource.Resource):
                     # If nothing changed at all
                     logging.info("No changes detected, nothing sent via CoAP.")
                     return aiocoap.Message(code=Code.VALID, payload=b"No Updates")
+
 
                 else:
                     logging.error(f"Failed to fetch updates: {response.text}")
